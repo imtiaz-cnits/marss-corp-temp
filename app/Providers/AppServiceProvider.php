@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Shared\User;
 use App\Support\PermissionRegistry;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -16,6 +17,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Paginator::defaultView('vendor.livewire.tailwind');
+
         Gate::define('admin', fn (User $user): bool => PermissionRegistry::isAdmin($user));
         Gate::define('super-admin', fn (User $user): bool => PermissionRegistry::isSuperAdmin($user));
         Gate::define('view-profit', fn (User $user): bool => PermissionRegistry::canViewProfit($user));

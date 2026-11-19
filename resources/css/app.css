@@ -51,44 +51,622 @@
     }
 }
 
-/* Justified minimal third-party widget overrides (Flatpickr dark theme) */
-.dark .flatpickr-calendar {
-    background: #0f172a;
-    border-color: #334155;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-    color: #f1f5f9;
+/* =========================================================
+   1. UNIFIED UI BORDER, CUSTOM SELECT & FILTER DROPDOWNS
+   ========================================================= */
+.unified-ui-border {
+    border: 1.5px solid #cbd5e1 !important;
 }
-.dark .flatpickr-months,
-.dark .flatpickr-months .flatpickr-month,
-.dark .flatpickr-weekdays,
-.dark span.flatpickr-weekday {
-    background: #0f172a;
-    color: #cbd5e1;
-    fill: #f1f5f9;
-}
-.dark .flatpickr-current-month,
-.dark .flatpickr-current-month input.cur-year {
-    color: #f1f5f9;
-}
-.dark .flatpickr-day {
-    color: #e2e8f0;
-}
-.dark .flatpickr-day:hover {
-    background: #1e293b;
-    border-color: #334155;
-}
-.dark .flatpickr-day.prevMonthDay,
-.dark .flatpickr-day.nextMonthDay {
-    color: #475569;
-}
-.flatpickr-day.selected,
-.flatpickr-day.selected:hover {
-    background: #15803d;
-    border-color: #15803d;
-    color: #ffffff;
+.dark .unified-ui-border,
+[light-mode="dark"] .unified-ui-border {
+    border-color: #334155 !important;
 }
 
-/* Justified print media isolation (cannot be expressed purely via Tailwind utilities) */
+/* Custom styling for native <select> elements so they look like the reference custom select */
+select:not(.no-custom-select) {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.65rem center;
+    background-size: 13px 13px;
+    padding-right: 2rem !important;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+select:not(.no-custom-select):hover {
+    border-color: #16a34a !important;
+}
+select:not(.no-custom-select):focus {
+    border-color: #15803d !important;
+    box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.18) !important;
+    outline: none !important;
+}
+.dark select:not(.no-custom-select),
+[light-mode="dark"] select:not(.no-custom-select) {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+/* Custom Filter Dropdown (Reference Brand/Product/Purchase/Invoice filter style) */
+.custom-filter-dropdown {
+    position: relative;
+}
+.custom-filter-dropdown .select-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 100%;
+    width: max-content;
+    max-width: 280px;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 12px;
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.14), 0 4px 12px rgba(15, 23, 42, 0.06);
+    padding: 6px;
+    z-index: 1050;
+}
+.dark .custom-filter-dropdown .select-menu,
+[light-mode="dark"] .custom-filter-dropdown .select-menu {
+    background: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+}
+.custom-filter-dropdown .select-option-item {
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #334155;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 6px;
+    border-left: 4px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    transition: all 0.15s ease-in-out;
+    margin-bottom: 2px;
+}
+.custom-filter-dropdown .select-option-item:hover {
+    background-color: #f0fdf4;
+    color: #15803d;
+    border-left-color: #16a34a;
+}
+.custom-filter-dropdown .select-option-item.active {
+    background-color: #dcfce7;
+    color: #15803d;
+    border-left-color: #16a34a;
+    font-weight: 700;
+}
+.dark .custom-filter-dropdown .select-option-item,
+[light-mode="dark"] .custom-filter-dropdown .select-option-item {
+    color: #cbd5e1;
+}
+.dark .custom-filter-dropdown .select-option-item:hover,
+[light-mode="dark"] .custom-filter-dropdown .select-option-item:hover {
+    background-color: #334155;
+    color: #4ade80;
+    border-left-color: #22c55e;
+}
+.dark .custom-filter-dropdown .select-option-item.active,
+[light-mode="dark"] .custom-filter-dropdown .select-option-item.active {
+    background-color: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border-left-color: #22c55e;
+}
+
+/* =========================================================
+   2. EXPORT BUTTONS (Copy, CSV, Excel, PDF, Print)
+   ========================================================= */
+.export-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 9px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+.export-btn:active {
+    transform: scale(0.97);
+}
+.export-btn--copy  { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+.export-btn--copy:hover  { background: #e2e8f0; border-color: #94a3b8; color: #0f172a; }
+.export-btn--csv   { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+.export-btn--csv:hover   { background: #d1fae5; border-color: #34d399; }
+.export-btn--excel { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+.export-btn--excel:hover { background: #dcfce7; border-color: #4ade80; }
+.export-btn--pdf   { background: #fff1f2; color: #be123c; border-color: #fecaca; }
+.export-btn--pdf:hover   { background: #ffe4e6; border-color: #f87171; }
+.export-btn--print { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.export-btn--print:hover { background: #dbeafe; border-color: #60a5fa; }
+
+.dark .export-btn--copy,  [light-mode="dark"] .export-btn--copy  { background: #1e293b; color: #94a3b8; border-color: #334155; }
+.dark .export-btn--copy:hover, [light-mode="dark"] .export-btn--copy:hover { background: #334155; color: #f8fafc; }
+.dark .export-btn--csv,   [light-mode="dark"] .export-btn--csv   { background: #022c1e; color: #34d399; border-color: #064e3b; }
+.dark .export-btn--csv:hover, [light-mode="dark"] .export-btn--csv:hover { background: #064e3b; }
+.dark .export-btn--excel, [light-mode="dark"] .export-btn--excel { background: #022c1e; color: #4ade80; border-color: #065f46; }
+.dark .export-btn--excel:hover, [light-mode="dark"] .export-btn--excel:hover { background: #065f46; }
+.dark .export-btn--pdf,   [light-mode="dark"] .export-btn--pdf   { background: #3b0006; color: #f87171; border-color: #7f1d1d; }
+.dark .export-btn--pdf:hover, [light-mode="dark"] .export-btn--pdf:hover { background: #7f1d1d; }
+.dark .export-btn--print, [light-mode="dark"] .export-btn--print { background: #0c1a3b; color: #60a5fa; border-color: #1e3a5f; }
+.dark .export-btn--print:hover, [light-mode="dark"] .export-btn--print:hover { background: #1e3a5f; }
+
+/* =========================================================
+   3. SMART PAGINATION & DISPLAY INFO FOOTER
+   ========================================================= */
+.custom-pagination-btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 10px;
+    border: 1.5px solid #cbd5e1;
+    background-color: #ffffff;
+    color: #475569;
+    transition: all 0.2s ease-in-out;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.custom-pagination-btn:hover:not(.disabled):not(.active) {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+.custom-pagination-btn.active {
+    background: linear-gradient(135deg, #16a34a, #15803d) !important;
+    color: #ffffff !important;
+    border-color: #16a34a !important;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3) !important;
+    font-weight: 700;
+}
+.custom-pagination-btn.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+    color: #94a3b8;
+}
+.dark .custom-pagination-btn,
+[light-mode="dark"] .custom-pagination-btn {
+    background-color: #1e293b;
+    border-color: #334155;
+    color: #cbd5e1;
+}
+.dark .custom-pagination-btn:hover:not(.disabled):not(.active),
+[light-mode="dark"] .custom-pagination-btn:hover:not(.disabled):not(.active) {
+    background-color: #334155;
+    color: #ffffff;
+}
+.dark .custom-pagination-btn.disabled,
+[light-mode="dark"] .custom-pagination-btn.disabled {
+    background-color: #0f172a;
+    border-color: #1e293b;
+    color: #475569;
+}
+
+/* =========================================================
+   4. TABLE HEADERS & INTERACTIVE COLUMN SORTING
+   ========================================================= */
+table thead.bg-\[\#15803d\] th {
+    background-color: #15803d;
+    color: #ffffff;
+    font-weight: 700;
+    user-select: none;
+}
+table thead th[data-sortable="true"] {
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.15s ease;
+}
+table thead th[data-sortable="true"]:hover {
+    background-color: #166534 !important;
+}
+table thead th .sort-icon {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px;
+    font-size: 10px;
+    opacity: 0.55;
+    vertical-align: middle;
+}
+table thead th[data-sort-dir="asc"] .sort-icon,
+table thead th[data-sort-dir="desc"] .sort-icon {
+    opacity: 1;
+    color: #fde047;
+}
+
+/* =========================================================
+   5. SIDEBAR COLLAPSED FLYOUT, MINI-TOOLTIP & RED LOGOUT
+   ========================================================= */
+.sidebar-active-gradient {
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.92) 0%, rgba(5, 150, 105, 0.95) 100%) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+    border-left: 3px solid #a7f3d0 !important;
+}
+.sidebar-active-parent {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    border-left: 3px solid #34d399 !important;
+}
+
+/* Vibrant Red Logout Button in Sidebar */
+.sidebar-logout-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+    color: #ffffff !important;
+    font-size: 13.5px;
+    font-weight: 700;
+    border: 1px solid rgba(252, 165, 165, 0.4) !important;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35) !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+.sidebar-logout-btn:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.48) !important;
+}
+.sidebar-logout-btn i,
+.sidebar-logout-btn span {
+    color: #ffffff !important;
+}
+
+/* Default (Expanded Sidebar): Hide flyouts & mini-tooltips */
+.sidebar-flyout,
+.sidebar-mini-tooltip {
+    display: none;
+}
+
+/* Collapsed Sidebar (70px) Rules */
+aside.sidebar-is-collapsed,
+aside.sidebar-is-collapsed #sidebar-slider-wrapper,
+aside.sidebar-is-collapsed #sidebar-main-panel {
+    overflow: visible !important;
+}
+
+aside.sidebar-is-collapsed #sidebar-main-panel {
+    transform: translateX(0) !important;
+    pointer-events: auto !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+aside.sidebar-is-collapsed .sidebar-submenu-panel {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+aside.sidebar-is-collapsed .sidebar-item {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    position: relative;
+}
+
+aside.sidebar-is-collapsed .sidebar-link,
+aside.sidebar-is-collapsed .sidebar-drilldown-trigger {
+    width: 44px !important;
+    height: 44px !important;
+    margin: 2px auto !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 10px !important;
+}
+
+aside.sidebar-is-collapsed .sidebar-link i,
+aside.sidebar-is-collapsed .sidebar-drilldown-trigger i {
+    margin: 0 !important;
+    width: auto !important;
+    font-size: 16px !important;
+}
+
+aside.sidebar-is-collapsed .sidebar-label,
+aside.sidebar-is-collapsed .sidebar-arrow {
+    display: none !important;
+}
+
+aside.sidebar-is-collapsed .sidebar-logout-btn {
+    width: 44px !important;
+    height: 44px !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+}
+
+/* Collapsed Flyout Dropdown Box on Hover */
+aside.sidebar-is-collapsed .sidebar-item.has-submenu .sidebar-flyout {
+    display: block !important;
+    position: absolute;
+    left: 70px;
+    top: 0;
+    margin-left: 10px;
+    width: 230px;
+    padding: 8px;
+    border-radius: 14px;
+    background: linear-gradient(145deg, rgba(6, 78, 59, 0.98), rgba(4, 120, 87, 0.98));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    box-shadow: 0 20px 40px -10px rgba(2, 44, 34, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(10px) scale(0.96);
+    transform-origin: left center;
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s;
+    z-index: 99999;
+    pointer-events: none;
+}
+aside.sidebar-is-collapsed .sidebar-item.has-submenu .sidebar-flyout.flyout-wide {
+    width: 260px;
+}
+
+/* Invisible hover bridge between 70px rail and flyout */
+aside.sidebar-is-collapsed .sidebar-item.has-submenu .sidebar-flyout::before {
+    content: "";
+    position: absolute;
+    top: -12px;
+    bottom: -12px;
+    left: -18px;
+    width: 20px;
+    background: transparent;
+}
+
+/* Left caret pointer on flyout */
+aside.sidebar-is-collapsed .sidebar-item.has-submenu .sidebar-flyout::after {
+    content: "";
+    position: absolute;
+    top: 16px;
+    left: -6px;
+    width: 11px;
+    height: 11px;
+    background: #065f46;
+    border-left: 1px solid rgba(52, 211, 153, 0.4);
+    border-bottom: 1px solid rgba(52, 211, 153, 0.4);
+    transform: rotate(45deg);
+    border-bottom-left-radius: 2px;
+}
+
+aside.sidebar-is-collapsed .sidebar-item.has-submenu:hover .sidebar-flyout,
+aside.sidebar-is-collapsed .sidebar-item.has-submenu.flyout-open .sidebar-flyout {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateX(0) scale(1) !important;
+    pointer-events: auto !important;
+}
+
+/* Flyout Submenu Links */
+.sidebar-flyout-link {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 10px;
+    border-radius: 9px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: rgba(241, 245, 249, 0.92);
+    text-decoration: none;
+    transition: all 0.16s ease;
+}
+.sidebar-flyout-link:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    transform: translateX(3px);
+}
+.sidebar-flyout-link.active-flyout-link {
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.88), rgba(5, 150, 105, 0.92));
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+/* Collapsed Mini Tooltip for Single Links */
+aside.sidebar-is-collapsed .sidebar-item .sidebar-mini-tooltip,
+aside.sidebar-is-collapsed .sidebar-bottom-logout .sidebar-mini-tooltip {
+    display: block !important;
+    position: absolute;
+    left: 70px;
+    top: 50%;
+    transform: translateY(-50%) translateX(8px);
+    margin-left: 10px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #064e3b, #047857);
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    box-shadow: 0 10px 25px -5px rgba(2, 44, 34, 0.6);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 99999;
+    pointer-events: none;
+}
+aside.sidebar-is-collapsed .sidebar-item .sidebar-mini-tooltip::after,
+aside.sidebar-is-collapsed .sidebar-bottom-logout .sidebar-mini-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: -5px;
+    width: 9px;
+    height: 9px;
+    background: #064e3b;
+    border-left: 1px solid rgba(52, 211, 153, 0.35);
+    border-bottom: 1px solid rgba(52, 211, 153, 0.35);
+    transform: translateY(-50%) rotate(45deg);
+}
+aside.sidebar-is-collapsed .sidebar-item:hover .sidebar-mini-tooltip,
+aside.sidebar-is-collapsed .sidebar-bottom-logout:hover .sidebar-mini-tooltip {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(-50%) translateX(0) !important;
+}
+
+/* =========================================================
+   6. MODAL STYLING (Emerald Header, Red Circular Close, 38px Footer Buttons)
+   ========================================================= */
+.marss-modal-header {
+    background: linear-gradient(135deg, #15803d 0%, #16a34a 100%) !important;
+    color: #ffffff !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+.marss-modal-header h3,
+.marss-modal-header h5,
+.marss-modal-header span {
+    color: #ffffff !important;
+}
+.marss-modal-close-btn {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    min-height: 30px !important;
+    border-radius: 50% !important;
+    background-color: #ef4444 !important;
+    color: #ffffff !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: none !important;
+    cursor: pointer !important;
+    transition: all 0.18s ease !important;
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.35) !important;
+    flex-shrink: 0 !important;
+}
+.marss-modal-close-btn:hover {
+    background-color: #dc2626 !important;
+    transform: scale(1.06);
+}
+.marss-modal-body form button[type="button"][wire\:click*="close"],
+.marss-modal-body form button[type="button"][wire\:click*="Close"],
+.marss-modal-body form button[type="button"][wire\:click*="show"] {
+    background-color: #dc2626 !important;
+    border-color: #dc2626 !important;
+    color: #ffffff !important;
+    height: 38px !important;
+    border-radius: 8px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+}
+.marss-modal-body form button[type="button"][wire\:click*="close"]:hover,
+.marss-modal-body form button[type="button"][wire\:click*="Close"]:hover,
+.marss-modal-body form button[type="button"][wire\:click*="show"]:hover {
+    background-color: #b91c1c !important;
+    border-color: #b91c1c !important;
+}
+.marss-modal-body form button[type="submit"] {
+    background: linear-gradient(135deg, #15803d 0%, #16a34a 100%) !important;
+    color: #ffffff !important;
+    height: 38px !important;
+    border-radius: 8px !important;
+    font-weight: 700 !important;
+    border: none !important;
+    cursor: pointer !important;
+}
+.marss-modal-body form button[type="submit"]:hover {
+    background: linear-gradient(135deg, #166534 0%, #15803d 100%) !important;
+}
+
+/* =========================================================
+   7. FLATPICKR CALENDAR THEME (Emerald Header & Dark Mode)
+   ========================================================= */
+.flatpickr-calendar {
+    border-radius: 12px !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 12px 28px -5px rgba(0, 0, 0, 0.15) !important;
+    font-family: inherit !important;
+    z-index: 999999 !important;
+}
+.flatpickr-months .flatpickr-month,
+.flatpickr-weekdays,
+span.flatpickr-weekday {
+    background: #15803d !important;
+    color: #ffffff !important;
+    fill: #ffffff !important;
+}
+.flatpickr-months .flatpickr-month {
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+.flatpickr-current-month .flatpickr-monthDropdown-months,
+.flatpickr-current-month input.cur-year {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+    background-color: #15803d !important;
+}
+.flatpickr-current-month .flatpickr-monthDropdown-months option {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+}
+.flatpickr-months .flatpickr-prev-month svg,
+.flatpickr-months .flatpickr-next-month svg {
+    fill: #ffffff !important;
+}
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+    background: #15803d !important;
+    border-color: #15803d !important;
+    color: #ffffff !important;
+}
+.flatpickr-day.today {
+    border-color: #16a34a !important;
+}
+.dark .flatpickr-calendar,
+[light-mode="dark"] .flatpickr-calendar {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65) !important;
+    color: #f1f5f9 !important;
+}
+.dark .flatpickr-day,
+[light-mode="dark"] .flatpickr-day {
+    color: #e2e8f0 !important;
+}
+.dark .flatpickr-day:hover,
+[light-mode="dark"] .flatpickr-day:hover {
+    background: #334155 !important;
+    border-color: #475569 !important;
+}
+.dark .flatpickr-day.prevMonthDay,
+.dark .flatpickr-day.nextMonthDay,
+[light-mode="dark"] .flatpickr-day.prevMonthDay,
+[light-mode="dark"] .flatpickr-day.nextMonthDay {
+    color: #64748b !important;
+}
+
+/* =========================================================
+   8. PRINT MEDIA ISOLATION
+   ========================================================= */
 @media print {
     .no-print {
         display: none !important;

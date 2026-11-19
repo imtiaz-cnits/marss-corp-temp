@@ -7,7 +7,7 @@ use Carbon\Carbon;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-#[Title('Retail Dashboard')]
+#[Title('Overview Dashboard')]
 class RetailDashboard extends Component
 {
     public string $filterType = 'today';
@@ -29,9 +29,30 @@ class RetailDashboard extends Component
         $this->dispatch('retail-dashboard-updated');
     }
 
+    public function updatedStartDate(): void
+    {
+        $this->filterType = 'date_wise';
+        $this->dispatch('retail-dashboard-updated');
+    }
+
+    public function updatedEndDate(): void
+    {
+        $this->filterType = 'date_wise';
+        $this->dispatch('retail-dashboard-updated');
+    }
+
     public function applyDateRange(): void
     {
         $this->filterType = 'date_wise';
+        $this->dispatch('retail-dashboard-updated');
+    }
+
+    public function clearDateRange(): void
+    {
+        $today = Carbon::today()->toDateString();
+        $this->startDate = $today;
+        $this->endDate = $today;
+        $this->filterType = 'today';
         $this->dispatch('retail-dashboard-updated');
     }
 

@@ -28,9 +28,27 @@ class BatteryDashboard extends Component
         $this->filterType = $type;
     }
 
+    public function updatedStartDate(): void
+    {
+        $this->filterType = 'date_wise';
+    }
+
+    public function updatedEndDate(): void
+    {
+        $this->filterType = 'date_wise';
+    }
+
     public function applyDateRange(): void
     {
         $this->filterType = 'date_wise';
+    }
+
+    public function clearDateRange(): void
+    {
+        $today = Carbon::today()->toDateString();
+        $this->startDate = $today;
+        $this->endDate = $today;
+        $this->filterType = 'today';
     }
 
     public function render(BatteryReportService $reports)

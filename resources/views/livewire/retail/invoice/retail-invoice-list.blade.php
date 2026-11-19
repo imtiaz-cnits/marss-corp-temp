@@ -1,93 +1,197 @@
-@php use App\Support\Money; @endphp
+@php
+    use App\Support\Money;
+    $pageSubTotal = $orders->getCollection()->sum(fn($o) => (float) ($o->sub_total ?? 0));
+    $pageDiscTotal = $orders->getCollection()->sum(fn($o) => (float) ($o->discount_amount ?? 0));
+    $pagePaidTotal = $orders->getCollection()->sum(fn($o) => (float) ($o->paid_amount ?? 0));
+    $pageDueTotal = $orders->getCollection()->sum(fn($o) => (float) ($o->due_amount ?? 0));
+@endphp
 
-<div class="space-y-4">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-            <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Retail Invoice List</h1>
-            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">View, collect due payments, edit line items, and print MARSS Retail bills.</p>
-        </div>
-        <a href="{{ route('retail.pos') }}" wire:navigate class="h-10 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-bold shadow-xs flex items-center gap-2">
-            <i class="fa-solid fa-cash-register"></i> New POS Sale
-        </a>
-    </div>
-
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border-[1.5px] border-slate-300 dark:border-slate-700 shadow-xs overflow-hidden">
-        <div class="p-3.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
-            <div class="flex flex-wrap items-center gap-2">
-                <select wire:model.live="perPage" class="h-[38px] px-2.5 rounded-xl border-[1.5px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold">
-                    <option value="15">15</option><option value="50">50</option><option value="100">100</option><option value="200">200</option>
-                </select>
-                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Invoice #, customer, mobile..." class="h-[38px] px-3 w-52 sm:w-64 rounded-xl border-[1.5px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm outline-none focus:border-emerald-700">
-                <select wire:model.live="statusFilter" class="h-[38px] px-3 rounded-xl border-[1.5px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold">
-                    <option value="">All Status</option>
-                    <option value="paid">Paid</option>
-                    <option value="due">Due</option>
-                </select>
-                <div class="w-32"><x-ui.date-picker wire:model.live="startDate" placeholder="From" /></div>
-                <div class="w-32"><x-ui.date-picker wire:model.live="endDate" placeholder="To" /></div>
-                <button type="button" wire:click="resetFilters" class="h-[38px] px-3 rounded-xl border-[1.5px] border-slate-300 dark:border-slate-700 text-xs font-bold cursor-pointer">Reset</button>
+<div>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-xs overflow-hidden p-3 sm:p-5">
+        {{-- 1. Top Section: Page Title with Emerald Icon Badge, Export Toolbar & Create Invoice Button --}}
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400 flex items-center justify-center border border-emerald-100 dark:border-slate-800 shadow-2xs shrink-0">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                </div>
+                <h1 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white tracking-tight leading-none m-0">Invoice List</h1>
             </div>
-            <x-ui.export-buttons table-id="retailInvoiceTable" filename="retail-invoices" title="MARSS Retail Invoice List" />
+
+            <div class="flex items-center flex-wrap gap-2">
+                <x-ui.export-buttons table-id="retailInvoiceTable" filename="retail-invoices" title="MARSS Retail Invoice List" />
+                <a
+                    href="{{ route('retail.pos') }}"
+                    wire:navigate
+                    class="h-[38px] px-4 rounded-xl bg-[#15803d] hover:bg-[#166534] text-white text-sm font-semibold shadow-xs inline-flex items-center gap-1.5 transition-all"
+                >
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>Create Invoice</span>
+                </a>
+            </div>
         </div>
 
-        {{-- Desktop Table --}}
-        <div class="hidden md:block overflow-x-auto">
-            <table id="retailInvoiceTable" data-export-skip-last="true" class="w-full text-xs sm:text-sm text-left">
-                <thead class="bg-[#15803d] text-white text-xs uppercase tracking-wider whitespace-nowrap">
-                    <tr>
-                        <th class="px-3 py-3">Invoice No</th>
-                        <th class="px-3 py-3">Date</th>
-                        <th class="px-3 py-3">Customer</th>
-                        <th class="px-3 py-3 text-right">SubTotal</th>
-                        <th class="px-3 py-3 text-right">Disc</th>
-                        <th class="px-3 py-3 text-right">Paid</th>
-                        <th class="px-3 py-3 text-right">Due</th>
-                        <th class="px-3 py-3 text-center">Status</th>
-                        <th class="px-3 py-3 text-right">Actions</th>
+        {{-- 2. Controls & Filter Row (5 Columns: Search | Start Date | End Date | SHOW: 15 | Custom Status Filter) --}}
+        <div class="grid grid-cols-2 md:flex md:flex-nowrap items-center gap-2 mb-3.5">
+            {{-- Col 1: Search Bar --}}
+            <div class="col-span-2 md:flex-1 unified-ui-border h-[38px] flex items-center px-3 bg-white dark:bg-slate-800/90 rounded-xl shadow-2xs focus-within:border-[#15803d]">
+                <svg class="w-4 h-4 text-slate-400 shrink-0 mr-2 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input
+                    type="text"
+                    wire:model.live.debounce.300ms="search"
+                    placeholder="Search Invoice, Customer, Mobile..."
+                    class="w-full h-full bg-transparent border-0 outline-none text-xs sm:text-[13px] text-slate-800 dark:text-slate-100 placeholder:text-slate-400"
+                >
+            </div>
+
+            {{-- Col 2: Start Date --}}
+            <div class="w-full md:w-[140px]">
+                <x-ui.date-picker wire:model.live="startDate" placeholder="Start Date" />
+            </div>
+
+            {{-- Col 3: End Date --}}
+            <div class="w-full md:w-[140px]">
+                <x-ui.date-picker wire:model.live="endDate" placeholder="End Date" />
+            </div>
+
+            {{-- Col 4: SHOW Entries Selector --}}
+            <div class="unified-ui-border h-[38px] px-3 rounded-xl bg-white dark:bg-slate-800/90 flex items-center justify-between gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 shadow-2xs shrink-0">
+                <span class="text-slate-400 text-[11px] font-bold uppercase tracking-wider">SHOW:</span>
+                <select wire:model.live="perPage" class="no-custom-select bg-transparent border-0 text-xs sm:text-sm font-bold text-[#15803d] dark:text-emerald-400 focus:outline-none cursor-pointer pr-1">
+                    <option value="15">15</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="200">200</option>
+                </select>
+            </div>
+
+            {{-- Col 5: Custom Status Filter Dropdown --}}
+            <div x-data="{ open: false }" @click.outside="open = false" class="custom-filter-dropdown shrink-0 w-full md:w-[138px]">
+                <button
+                    type="button"
+                    @click="open = !open"
+                    class="w-full unified-ui-border h-[38px] px-3 rounded-xl bg-white dark:bg-slate-800/90 text-xs sm:text-[13px] font-semibold text-slate-700 dark:text-slate-200 flex items-center justify-between gap-1.5 shadow-2xs cursor-pointer hover:border-emerald-500 transition-colors"
+                >
+                    <span class="flex items-center gap-1.5 truncate">
+                        <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                        <span class="truncate">{{ $statusFilter === 'paid' ? 'Paid Only' : ($statusFilter === 'due' ? 'Due Only' : 'All Status') }}</span>
+                    </span>
+                    <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''"></i>
+                </button>
+                <div
+                    x-show="open"
+                    x-transition
+                    style="display: none; right: 0; left: auto;"
+                    class="select-menu"
+                >
+                    @foreach(['' => 'All Status', 'paid' => 'Paid Only', 'due' => 'Due Only'] as $val => $lbl)
+                        <div
+                            wire:click="$set('statusFilter', '{{ $val }}')"
+                            @click="open = false"
+                            class="select-option-item {{ $statusFilter === $val ? 'active' : '' }}"
+                        >
+                            <span>{{ $lbl }}</span>
+                            @if($statusFilter === $val)
+                                <i class="fa-solid fa-check text-xs text-emerald-600"></i>
+                            @endif
+                        </div>
+                    @endforeach
+                    @if($search !== '' || $statusFilter !== '' || $startDate !== '' || $endDate !== '')
+                        <div
+                            wire:click="resetFilters"
+                            @click="open = false"
+                            class="select-option-item text-rose-600 hover:!bg-rose-50 hover:!text-rose-700 hover:!border-l-rose-500 border-t border-slate-100 dark:border-slate-700 mt-1 pt-1.5"
+                        >
+                            <span>Reset Filters</span>
+                            <i class="fa-solid fa-rotate-left text-xs"></i>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        {{-- 3. Desktop Table (Unified UI Border, Solid #15803d Header, Rounded Top Corners) --}}
+        <div class="table-responsive unified-ui-border hidden md:block w-full overflow-x-auto rounded-2xl shadow-2xs bg-white dark:bg-slate-900">
+            <table id="retailInvoiceTable" data-export-skip-last="true" class="w-full text-xs sm:text-[13px] text-left border-collapse">
+                <thead>
+                    <tr class="bg-[#15803d] text-white text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
+                        <th class="p-[10px] text-center w-[44px] rounded-tl-2xl">SL</th>
+                        <th class="p-[10px]">Invoice No</th>
+                        <th class="p-[10px]">Date</th>
+                        <th class="p-[10px]">Customer</th>
+                        <th class="p-[10px] text-right">SubTotal</th>
+                        <th class="p-[10px] text-right">Disc</th>
+                        <th class="p-[10px] text-right">Paid</th>
+                        <th class="p-[10px] text-right">Due</th>
+                        <th class="p-[10px] text-center">Status</th>
+                        <th class="p-[10px] text-center rounded-tr-2xl">Action</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-                    @forelse($orders as $order)
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-200">
+                    @forelse($orders as $idx => $order)
                         @php $isDue = (float) ($order->due_amount ?? 0) > 0.009; @endphp
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                            <td class="px-3 py-2.5 font-extrabold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">{{ $order->order_no }}</td>
-                            <td class="px-3 py-2.5 whitespace-nowrap text-xs text-slate-500">{{ \Carbon\Carbon::parse($order->invoice_date ?? $order->created_at)->format('d-m-Y') }}</td>
-                            <td class="px-3 py-2.5">
-                                <div class="font-bold text-slate-800 dark:text-white">{{ $order->customer?->customer_name ?? 'Walk-in' }}</div>
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                            <td class="p-[10px] text-center font-bold text-slate-400">{{ ($orders->firstItem() ?? 1) + $idx }}</td>
+                            <td class="p-[10px] font-extrabold text-[#15803d] dark:text-emerald-400 whitespace-nowrap">{{ $order->order_no }}</td>
+                            <td class="p-[10px] whitespace-nowrap text-xs text-slate-500">{{ \Carbon\Carbon::parse($order->invoice_date ?? $order->created_at)->format('d-m-Y') }}</td>
+                            <td class="p-[10px]">
+                                <div class="font-bold text-slate-800 dark:text-white leading-tight">{{ $order->customer?->customer_name ?? 'Walk-in' }}</div>
                                 <div class="text-[11px] text-slate-400">{{ $order->customer?->mobile }}</div>
                             </td>
-                            <td class="px-3 py-2.5 text-right font-semibold tabular-nums">{{ Money::formatBd($order->sub_total) }}</td>
-                            <td class="px-3 py-2.5 text-right text-slate-500 tabular-nums">{{ Money::formatBd($order->discount_amount) }}</td>
-                            <td class="px-3 py-2.5 text-right font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{{ Money::formatBd($order->paid_amount) }}</td>
-                            <td class="px-3 py-2.5 text-right font-bold tabular-nums {{ $isDue ? 'text-rose-600' : 'text-slate-400' }}">{{ Money::formatBd($order->due_amount) }}</td>
-                            <td class="px-3 py-2.5 text-center">
-                                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold {{ $isDue ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' }}">
+                            <td class="p-[10px] text-right font-semibold tabular-nums whitespace-nowrap">{{ Money::formatBd($order->sub_total) }}</td>
+                            <td class="p-[10px] text-right text-slate-500 tabular-nums whitespace-nowrap">{{ Money::formatBd($order->discount_amount) }}</td>
+                            <td class="p-[10px] text-right font-bold text-[#15803d] dark:text-emerald-400 tabular-nums whitespace-nowrap">{{ Money::formatBd($order->paid_amount) }}</td>
+                            <td class="p-[10px] text-right font-bold tabular-nums whitespace-nowrap {{ $isDue ? 'text-rose-600' : 'text-slate-400' }}">{{ Money::formatBd($order->due_amount) }}</td>
+                            <td class="p-[10px] text-center">
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold {{ $isDue ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' }}">
                                     {{ $isDue ? 'Due' : 'Paid' }}
                                 </span>
                             </td>
-                            <td class="px-3 py-2.5 text-right whitespace-nowrap space-x-1">
-                                <button type="button" wire:click="openView({{ $order->id }})" title="Quick View" class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 text-xs font-bold cursor-pointer"><i class="fa-regular fa-eye"></i></button>
-                                @if($isDue)
-                                    <button type="button" wire:click="openPayment({{ $order->id }})" title="Collect Due" class="px-2 py-1 rounded-lg bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 hover:bg-amber-200 text-xs font-bold cursor-pointer"><i class="fa-solid fa-hand-holding-dollar"></i></button>
-                                @endif
-                                <button type="button" wire:click="openEdit({{ $order->id }})" title="Full Edit" class="px-2 py-1 rounded-lg bg-sky-100 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 hover:bg-sky-200 text-xs font-bold cursor-pointer"><i class="fa-solid fa-pen-to-square"></i></button>
-                                <a href="{{ route('retail.invoice.show', $order->id) }}" target="_blank" title="Print Bill" class="inline-block px-2 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 text-xs font-bold"><i class="fa-solid fa-print"></i></a>
+                            <td class="p-[10px] text-center whitespace-nowrap">
+                                <div class="inline-flex items-center justify-center gap-1">
+                                    <button type="button" wire:click="openView({{ $order->id }})" title="Quick View" class="w-[30px] h-[30px] rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-[#15803d] hover:text-white inline-flex items-center justify-center text-xs transition-colors cursor-pointer"><i class="fa-regular fa-eye"></i></button>
+                                    @if($isDue)
+                                        <button type="button" wire:click="openPayment({{ $order->id }})" title="Collect Due" class="w-[30px] h-[30px] rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-600 hover:text-white inline-flex items-center justify-center text-xs transition-colors cursor-pointer"><i class="fa-solid fa-hand-holding-dollar"></i></button>
+                                    @endif
+                                    <button type="button" wire:click="openEdit({{ $order->id }})" title="Full Edit" class="w-[30px] h-[30px] rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-600 hover:text-white inline-flex items-center justify-center text-xs transition-colors cursor-pointer"><i class="fa-solid fa-pen-to-square"></i></button>
+                                    <a href="{{ route('retail.invoice.show', $order->id) }}" target="_blank" title="Print Bill" class="w-[30px] h-[30px] rounded-lg bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-600 hover:text-white inline-flex items-center justify-center text-xs transition-colors"><i class="fa-solid fa-print"></i></a>
+                                </div>
                             </td>
                         </tr>
                     @empty
-                        <tr data-empty-row="true"><td colspan="9" class="px-4 py-8 text-center text-slate-500">No Retail invoices found.</td></tr>
+                        <tr data-empty-row="true"><td colspan="10" class="px-4 py-8 text-center text-rose-500 font-bold">❌ No Retail invoices found.</td></tr>
                     @endforelse
                 </tbody>
+                <tfoot class="bg-slate-50/90 dark:bg-slate-800/70 text-slate-800 dark:text-slate-100 font-bold border-t-2 border-emerald-600/30 text-xs sm:text-[13px]">
+                    <tr>
+                        <td colspan="4" class="p-[10px] text-right font-bold text-slate-600 dark:text-slate-300">Page Total:</td>
+                        <td class="p-[10px] text-right font-extrabold tabular-nums whitespace-nowrap">{{ Money::formatBd($pageSubTotal) }}</td>
+                        <td class="p-[10px] text-right font-bold text-slate-500 tabular-nums whitespace-nowrap">{{ Money::formatBd($pageDiscTotal) }}</td>
+                        <td class="p-[10px] text-right font-extrabold text-[#15803d] dark:text-emerald-400 tabular-nums whitespace-nowrap">{{ Money::formatBd($pagePaidTotal) }}</td>
+                        <td class="p-[10px] text-right font-extrabold text-rose-600 tabular-nums whitespace-nowrap">{{ Money::formatBd($pageDueTotal) }}</td>
+                        <td colspan="2" class="p-[10px]"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
 
-        {{-- Mobile Cards --}}
-        <div class="md:hidden divide-y divide-slate-200 dark:divide-slate-800">
+        {{-- 4. Mobile Cards --}}
+        <div class="md:hidden space-y-3">
             @foreach($orders as $order)
                 @php $isDue = (float) ($order->due_amount ?? 0) > 0.009; @endphp
-                <div class="p-3.5 space-y-2">
+                <div class="unified-ui-border rounded-2xl p-3.5 bg-white dark:bg-slate-800/80 shadow-2xs space-y-2">
                     <div class="flex items-center justify-between">
-                        <span class="font-extrabold text-emerald-700 dark:text-emerald-400 text-sm">{{ $order->order_no }}</span>
+                        <span class="font-extrabold text-[#15803d] dark:text-emerald-400 text-sm">{{ $order->order_no }}</span>
                         <span class="text-xs text-slate-500">{{ \Carbon\Carbon::parse($order->invoice_date ?? $order->created_at)->format('d-m-Y') }}</span>
                     </div>
                     <p class="text-xs font-bold text-slate-800 dark:text-white">{{ $order->customer?->customer_name ?? 'Walk-in' }}</p>
@@ -109,19 +213,22 @@
             @endforeach
         </div>
 
-        <div class="p-3 border-t border-slate-200 dark:border-slate-800">{{ $orders->links() }}</div>
+        {{-- 5. Smart Pagination & Display Info Footer --}}
+        <div class="pt-4 mt-4 border-t border-slate-200 dark:border-slate-800">
+            {{ $orders->links() }}
+        </div>
     </div>
 
     {{-- Quick View Modal --}}
-    <x-ui.modal :show="$showViewModal && $viewingOrder" max-width="lg" :title="'Invoice Details — ' . ($viewingOrder?->order_no ?? '')" close-method="closeModals">
+    <x-ui.modal :show="$showViewModal && $viewingOrder" max-width="lg" :title="'Invoice Details — ' . ($viewingOrder?->order_no ?? '')" icon="fa-solid fa-file-invoice" close-method="closeModals">
         @if($viewingOrder)
             <div class="space-y-4 text-xs sm:text-sm">
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70">
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
                     <div><span class="text-slate-400 block text-[11px]">Customer</span><strong>{{ $viewingOrder->customer?->customer_name ?? 'N/A' }}</strong></div>
                     <div><span class="text-slate-400 block text-[11px]">Date</span><strong>{{ \Carbon\Carbon::parse($viewingOrder->invoice_date ?? $viewingOrder->created_at)->format('d-m-Y') }}</strong></div>
                     <div><span class="text-slate-400 block text-[11px]">Due Amount</span><strong class="text-rose-600">{{ Money::formatBd($viewingOrder->due_amount) }}</strong></div>
                 </div>
-                <table class="w-full text-xs border border-slate-200 dark:border-slate-700">
+                <table class="w-full text-xs border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
                     <thead class="bg-[#15803d] text-white">
                         <tr><th class="px-2.5 py-2 text-left">Product</th><th class="px-2.5 py-2 text-center">Qty</th><th class="px-2.5 py-2 text-center">Ret</th><th class="px-2.5 py-2 text-right">Rate</th><th class="px-2.5 py-2 text-right">Line Total</th></tr>
                     </thead>
@@ -137,16 +244,19 @@
                         @endforeach
                     </tbody>
                 </table>
-                <div class="flex justify-between items-center">
+                <div class="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-800">
                     <div class="text-xs text-slate-500">Payments recorded: <strong>{{ $viewingOrder->payments->count() }}</strong></div>
-                    <a href="{{ route('retail.invoice.show', $viewingOrder->id) }}" target="_blank" class="h-9 px-4 rounded-xl bg-emerald-700 text-white text-xs font-bold inline-flex items-center gap-1.5"><i class="fa-solid fa-print"></i> Print Bill</a>
+                    <div class="flex items-center gap-2">
+                        <button type="button" wire:click="closeModals" class="h-[38px] px-4 rounded-lg bg-[#dc2626] hover:bg-[#b91c1c] text-white text-xs font-bold cursor-pointer">Close</button>
+                        <a href="{{ route('retail.invoice.show', $viewingOrder->id) }}" target="_blank" class="h-[38px] px-4 rounded-lg bg-[#15803d] hover:bg-[#166534] text-white text-xs font-bold inline-flex items-center gap-1.5"><i class="fa-solid fa-print"></i> Print Bill</a>
+                    </div>
                 </div>
             </div>
         @endif
     </x-ui.modal>
 
     {{-- Direct Due Payment Modal --}}
-    <x-ui.modal :show="$showPaymentModal" :title="'Collect Due — ' . $payOrderNo" close-method="closeModals">
+    <x-ui.modal :show="$showPaymentModal" :title="'Collect Due — ' . $payOrderNo" icon="fa-solid fa-hand-holding-dollar" close-method="closeModals">
         <form wire:submit="submitPayment" class="space-y-3">
             <div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex justify-between text-sm">
                 <span class="font-bold text-amber-800 dark:text-amber-300">Remaining Due:</span>
@@ -177,14 +287,14 @@
                 <input type="text" wire:model="payTrxId" class="w-full h-10 px-3 rounded-xl border-[1.5px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm">
             </div>
             <div class="flex justify-end gap-2 pt-2">
-                <button type="button" wire:click="closeModals" class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-bold">Cancel</button>
-                <button type="submit" class="h-10 px-5 rounded-xl bg-emerald-700 text-white text-sm font-bold cursor-pointer">Save Payment</button>
+                <button type="button" wire:click="closeModals" class="h-[38px] px-4 rounded-lg bg-[#dc2626] text-white text-sm font-bold">Cancel</button>
+                <button type="submit" class="h-[38px] px-5 rounded-lg bg-[#15803d] text-white text-sm font-bold cursor-pointer">Save Payment</button>
             </div>
         </form>
     </x-ui.modal>
 
     {{-- Full Invoice Edit Modal (920px Standard) --}}
-    <x-ui.modal :show="$showEditModal" max-width="full-edit" :title="'Full Edit Invoice — ' . $editOrderNo" close-method="closeModals">
+    <x-ui.modal :show="$showEditModal" max-width="full-edit" :title="'Full Edit Invoice — ' . $editOrderNo" icon="fa-solid fa-pen-to-square" close-method="closeModals">
         <form wire:submit="submitFullEdit" class="space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
@@ -213,7 +323,7 @@
                         <option value="{{ $ap->id }}">{{ $ap->product_name }} (Stock: {{ $ap->quantity }})</option>
                     @endforeach
                 </select>
-                <button type="button" wire:click="addEditProduct" class="h-9 px-4 rounded-xl bg-emerald-700 text-white text-xs font-bold cursor-pointer">Add Item</button>
+                <button type="button" wire:click="addEditProduct" class="h-9 px-4 rounded-xl bg-[#15803d] text-white text-xs font-bold cursor-pointer">Add Item</button>
             </div>
 
             <div class="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-xl">
@@ -250,7 +360,7 @@
                 <div>
                     <label class="block text-xs font-bold mb-1">Discount</label>
                     <div class="flex">
-                        <select wire:model="editDiscountType" class="h-10 px-2 rounded-l-xl border-[1.5px] border-r-0 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold">
+                        <select wire:model="editDiscountType" class="no-custom-select h-10 px-2.5 rounded-l-xl border-[1.5px] border-r-0 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold">
                             <option value="fixed">৳</option><option value="percent">%</option>
                         </select>
                         <input type="number" step="0.01" min="0" wire:model="editDiscountValue" class="w-full h-10 px-3 rounded-r-xl border-[1.5px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm">
@@ -270,8 +380,8 @@
             </div>
 
             <div class="flex justify-end gap-2 pt-2">
-                <button type="button" wire:click="closeModals" class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-bold">Cancel</button>
-                <button type="submit" class="h-10 px-5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-bold cursor-pointer">Update Invoice</button>
+                <button type="button" wire:click="closeModals" class="h-[38px] px-4 rounded-lg bg-[#dc2626] text-sm font-bold text-white">Cancel</button>
+                <button type="submit" class="h-[38px] px-5 rounded-lg bg-[#15803d] hover:bg-[#166534] text-white text-sm font-bold cursor-pointer">Update Invoice</button>
             </div>
         </form>
     </x-ui.modal>

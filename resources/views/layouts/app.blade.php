@@ -78,6 +78,7 @@
             }
         }
     }"
+    :data-sidebar-size="sidebarCollapsed ? 'sm' : 'lg'"
     class="font-sans antialiased bg-[#f8fafc] dark:bg-[#0b0f19] text-slate-900 dark:text-slate-100 min-h-screen"
 >
     {{-- Mobile Sidebar Backdrop --}}
@@ -89,16 +90,16 @@
         style="display: none;"
     ></div>
 
-    {{-- Left Vertical Sidebar (240px Expanded / 70px Collapsed Emerald-Teal Mesh Gradient) --}}
+    {{-- Left Vertical Sidebar (240px Expanded / 70px Collapsed Emerald-Teal Mesh Gradient, Zero Right Shadow Bleed) --}}
     <aside
         :class="[
-            sidebarCollapsed ? 'lg:w-[70px]' : 'lg:w-[240px]',
+            sidebarCollapsed ? 'lg:w-[70px] sidebar-is-collapsed' : 'lg:w-[240px]',
             mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         ]"
-        class="fixed inset-y-0 left-0 z-40 w-[240px] flex flex-col bg-gradient-to-b from-[#064e3b] via-[#047857] to-[#0f766e] border-r border-white/15 shadow-[4px_0_25px_rgba(4,120,87,0.25)] transition-all duration-200 ease-in-out no-print"
+        class="fixed inset-y-0 left-0 z-40 w-[240px] flex flex-col bg-gradient-to-b from-[#064e3b] via-[#047857] to-[#0f766e] border-r border-slate-200/20 dark:border-slate-800 shadow-none transition-all duration-200 ease-in-out no-print"
     >
         {{-- Brand Logo Header (58px) --}}
-        <div class="h-[58px] shrink-0 flex items-center justify-center px-3 bg-[#064e3b]/95 border-b border-white/15">
+        <div class="h-[58px] shrink-0 flex items-center justify-center px-2 bg-[#064e3b]/95 border-b border-white/15">
             <a
                 href="{{ $isBattery ? route('battery.dashboard') : route('retail.dashboard') }}"
                 wire:navigate
@@ -120,33 +121,34 @@
             </a>
         </div>
 
-        {{-- Sliding Drilldown Sidebar Menu Panels --}}
+        {{-- Sliding Drilldown Sidebar Menu Panels + Collapsed Hover Flyouts --}}
         @if($isBattery)
             @include('layouts.partials.sidebar-battery')
         @else
             @include('layouts.partials.sidebar-retail')
         @endif
 
-        {{-- Fixed Bottom Logout --}}
-        <div class="shrink-0 p-2 bg-[#064e3b]/95 border-t border-white/15">
+        {{-- Fixed Bottom Vibrant Red Logout Button --}}
+        <div class="sidebar-bottom-logout relative group shrink-0 p-2 bg-[#064e3b]/95 border-t border-white/15">
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button
                     type="submit"
-                    class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/35 text-red-100 hover:text-white text-[13px] font-semibold transition-colors cursor-pointer"
+                    class="sidebar-logout-btn"
                     title="Log Out"
                 >
                     <i class="fa-solid fa-right-from-bracket text-sm shrink-0"></i>
-                    <span x-show="!sidebarCollapsed" class="truncate">Log Out</span>
+                    <span x-show="!sidebarCollapsed" class="sidebar-label truncate">Log Out</span>
                 </button>
             </form>
+            <div class="sidebar-mini-tooltip">Log Out</div>
         </div>
     </aside>
 
     {{-- Top Navbar (58px Compact) --}}
     <header
         :class="sidebarCollapsed ? 'lg:left-[70px]' : 'lg:left-[240px]'"
-        class="fixed top-0 right-0 left-0 z-30 h-[58px] bg-white dark:bg-[#0b0f19] border-b border-slate-200 dark:border-slate-800 shadow-xs transition-all duration-200 flex items-center justify-between px-3 sm:px-4 no-print"
+        class="fixed top-0 right-0 left-0 z-30 h-[58px] bg-white dark:bg-[#0b0f19] border-b border-slate-200 dark:border-slate-800 shadow-2xs transition-all duration-200 flex items-center justify-between px-3 sm:px-4 no-print"
     >
         <div class="flex items-center gap-2 sm:gap-3">
             {{-- Sidebar Toggle Button --}}
@@ -154,7 +156,7 @@
                 type="button"
                 @click="toggleSidebar()"
                 title="Toggle Sidebar"
-                class="w-[38px] h-[38px] rounded-[10px] bg-emerald-50 dark:bg-slate-800 border border-emerald-200 dark:border-slate-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-slate-700 flex items-center justify-center shadow-xs transition-all cursor-pointer"
+                class="w-[38px] h-[38px] rounded-[10px] bg-emerald-50 dark:bg-slate-800 border border-emerald-200 dark:border-slate-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-slate-700 flex items-center justify-center shadow-2xs transition-all cursor-pointer"
             >
                 <i class="fa-solid fa-bars-staggered text-[15px]"></i>
             </button>
@@ -164,7 +166,7 @@
                 <button
                     type="button"
                     @click="open = !open"
-                    class="h-[34px] inline-flex items-center gap-2 px-3 rounded-xl border font-semibold text-xs sm:text-[13px] transition-all shadow-xs cursor-pointer {{ $isBattery ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300' }}"
+                    class="h-[34px] inline-flex items-center gap-2 px-3 rounded-xl border font-semibold text-xs sm:text-[13px] transition-all shadow-2xs cursor-pointer {{ $isBattery ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300' }}"
                 >
                     <i class="{{ $isBattery ? 'fa-solid fa-car-battery text-amber-500' : 'fa-solid fa-shop text-emerald-600' }}"></i>
                     <span class="hidden sm:inline">{{ $isBattery ? 'Battery' : 'Retail Shop' }}</span>
@@ -290,7 +292,7 @@
         </div>
     </header>
 
-    {{-- Main Page Workspace (min-h-screen flex-col guarantees Sticky Footer at all zoom levels) --}}
+    {{-- Main Page Workspace (Flush 70px when collapsed, 240px when expanded) --}}
     <div
         :class="sidebarCollapsed ? 'lg:ml-[70px]' : 'lg:ml-[240px]'"
         class="min-h-screen flex flex-col pt-[58px] transition-all duration-200"

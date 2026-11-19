@@ -8,7 +8,7 @@ window.flatpickr = flatpickr;
 window.JsBarcode = JsBarcode;
 window.Html5Qrcode = Html5Qrcode;
 
-// Single authoritative Dark/Light theme controller (eliminates 4 conflicting legacy scripts)
+// Single authoritative Dark/Light theme controller
 window.marssTheme = {
     isDark() {
         return localStorage.getItem('lightMode') === 'dark';
@@ -32,25 +32,150 @@ window.marssTheme = {
     },
 };
 
-// Re-apply theme smoothly after every Livewire wire:navigate transition
-document.addEventListener('livewire:navigated', () => {
+// Web Audio API POS Scan Beep Sound
+window.marssPlayBeep = function () {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1200, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.09);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.09);
+    } catch {}
+};
+
+// Interactive Table Column Sorting (works across all MARSS tables)
+window.marssTableSort = {
+    init() {
+        document.querySelectorAll('table thead tr').forEach((tr) => {
+            const ths = Array.from(tr.querySelectorAll('th'));
+            ths.forEach((th, colIdx) => {
+                if (th.dataset.sortBound === '1') return;
+                const label = (th.textContent || '').trim().toLowerCase();
+                if (!label || label === 'action' || label === 'actions' || label === 'img' || label === 'image' || label === 'logo') {
+                    return;
+                }
+                th.dataset.sortBound = '1';
+                th.dataset.sortable = 'true';
+                if (!th.querySelector('.sort-icon')) {
+                    const icon = document.createElement('span');
+                    icon.className = 'sort-icon';
+                    icon.innerHTML = '<i class="fa-solid fa-sort"></i>';
+                    th.appendChild(icon);
+                }
+                th.addEventListener('click', () => {
+                    const table = th.closest('table');
+                    const tbody = table?.querySelector('tbody');
+                    if (!tbody) return;
+                    const rows = Array.from(tbody.querySelectorAll('tr')).filter(
+                        (r) => !r.dataset.emptyRow && r.querySelectorAll('td').length > 1
+                    );
+                    if (rows.length <= 1) return;
+
+                    const currentDir = th.dataset.sortDir === 'asc' ? 'desc' : 'asc';
+                    ths.forEach((h) => {
+                        delete h.dataset.sortDir;
+                        const ic = h.querySelector('.sort-icon');
+                        if (ic) ic.innerHTML = '<i class="fa-solid fa-sort"></i>';
+                    });
+                    th.dataset.sortDir = currentDir;
+                    const activeIcon = th.querySelector('.sort-icon');
+                    if (activeIcon) {
+                        activeIcon.innerHTML =
+                            currentDir === 'asc'
+                                ? '<i class="fa-solid fa-sort-up"></i>'
+                                : '<i class="fa-solid fa-sort-down"></i>';
+                    }
+
+                    const parseCell = (row) => {
+                        const cell = row.querySelectorAll('td')[colIdx];
+                        const raw = (cell?.innerText || '').trim();
+                        const numeric = raw.replace(/[৳$,%\s,]/g, '');
+                        if (numeric !== '' && !isNaN(Number(numeric)) && /^[-+]?\d+(\.\d+)?$/.test(numeric)) {
+                            return { type: 'num', val: Number(numeric) };
+                        }
+                        return { type: 'str', val: raw.toLowerCase() };
+                    };
+
+                    rows.sort((a, b) => {
+                        const va = parseCell(a);
+                        const vb = parseCell(b);
+                        let cmp = 0;
+                        if (va.type === 'num' && vb.type === 'num') {
+                            cmp = va.val - vb.val;
+                        } else {
+                            cmp = String(va.val).localeCompare(String(vb.val), undefined, { numeric: true });
+                        }
+                        return currentDir === 'asc' ? cmp : -cmp;
+                    });
+
+                    rows.forEach((r) => tbody.appendChild(r));
+                });
+            });
+        });
+    },
+};
+
+// Smart vertical viewport positioning for collapsed sidebar flyouts
+window.marssSidebarFlyouts = {
+    init() {
+        document.querySelectorAll('.sidebar-item.has-submenu').forEach((item) => {
+            if (item.dataset.flyoutBound === '1') return;
+            item.dataset.flyoutBound = '1';
+            item.addEventListener('mouseenter', () => {
+                const aside = item.closest('aside');
+                if (!aside || !aside.classList.contains('sidebar-is-collapsed')) return;
+                const flyout = item.querySelector('.sidebar-flyout');
+                if (!flyout) return;
+                const rect = item.getBoundingClientRect();
+                const flyoutHeight = flyout.offsetHeight || 240;
+                if (rect.top + flyoutHeight > window.innerHeight - 16) {
+                    flyout.style.top = 'auto';
+                    flyout.style.bottom = '0px';
+                } else {
+                    flyout.style.top = '0px';
+                    flyout.style.bottom = 'auto';
+                }
+            });
+        });
+    },
+};
+
+document.addEventListener('DOMContentLoaded', () => {
     window.marssTheme.apply();
+    window.marssTableSort.init();
+    window.marssSidebarFlyouts.init();
 });
 
-// Pure vanilla browser table export utilities (Copy TSV, CSV, Excel .xls, Print)
+document.addEventListener('livewire:navigated', () => {
+    window.marssTheme.apply();
+    window.marssTableSort.init();
+    window.marssSidebarFlyouts.init();
+});
+
+// Pure vanilla browser table export utilities (Copy TSV, CSV, Excel .xls, PDF/Print)
 window.marssExport = {
     extractTableData(tableId) {
-        const table = document.getElementById(tableId);
+        const table = document.getElementById(tableId) || document.querySelector('table');
         if (!table) return { headers: [], rows: [], footers: [] };
         const skipLast = table.dataset.exportSkipLast === 'true';
         const getCells = (tr) => {
             const cells = Array.from(tr.querySelectorAll('th, td'));
-            const usable = skipLast ? cells.slice(0, -1) : cells;
+            const lastText = (cells[cells.length - 1]?.innerText || '').trim().toLowerCase();
+            const shouldDropLast = skipLast || lastText === 'action' || lastText === 'actions';
+            const usable = shouldDropLast && cells.length > 1 ? cells.slice(0, -1) : cells;
             return usable.map((c) => (c.innerText || '').replace(/\s+/g, ' ').trim());
         };
         const headers = Array.from(table.querySelectorAll('thead tr')).map(getCells);
         const rows = Array.from(table.querySelectorAll('tbody tr'))
-            .filter((tr) => !tr.dataset.emptyRow)
+            .filter((tr) => !tr.dataset.emptyRow && tr.querySelectorAll('td').length > 1)
             .map(getCells);
         const footers = Array.from(table.querySelectorAll('tfoot tr')).map(getCells);
         return { headers, rows, footers };
@@ -91,7 +216,7 @@ window.marssExport = {
             .hdr h2 { margin: 0; color: #15803d; font-size: 20px; }
             .hdr p { margin: 4px 0 0; font-size: 12px; color: #475569; }
             table { width: 100%; border-collapse: collapse; font-size: 11px; }
-            th { background: #15803d; color: #fff; padding: 6px; border: 1px solid #15803d; text-align: left; }
+            th { background: #15803d; color: #fff; padding: 6px; border: 1px solid #15803d; text-align: left; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             td { padding: 5px 6px; border: 1px solid #cbd5e1; }
             tfoot th { background: #f1f5f9; color: #0f172a; border-color: #cbd5e1; }
             .sigs { display: flex; justify-content: space-between; margin-top: 48px; font-size: 11px; }
