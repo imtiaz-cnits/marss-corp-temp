@@ -3,7 +3,7 @@
 **Project:** MARSS Corporation — Retail & Battery Management System  
 **Target Directory:** `f:\Running-work\marss-corp-temp\`  
 **Target Database:** `marsscorp-temp-db` (MySQL 8.4.3)  
-**Target Git Baseline Commit (`main`):** `__BASELINE_SHORT_HASH__` (`__BASELINE_COMMIT_HASH__` — `chore: establish verified MARSS Laravel migration baseline`)  
+**Target Git Baseline Commit (`main`):** `f48462a` (`f48462a4377608f9eb0d66e9f683e21d5ce2978e` — `chore: establish verified MARSS Laravel migration baseline`)  
 **Reference Project:** `f:\Running-work\marss-corp-temp\marsscorp-retailshop-mgm\` (**PRESERVED** — 100% Untouched & Read-Only, Git HEAD `eea00fd user log done`, `0` working-tree diffs)  
 **Reference SQL Dump:** `f:\Running-work\marss-corp-temp\marsscorp-temp-db.sql` (**PRESERVED** — 100% Untouched & Read-Only, `306,430` bytes, `SHA256: F111B62B0BF94449582C0EAD713F6A542FCD3F90CFDCB032D9A74EB173EEF614`)  
 **Final Status:** **VERIFIED — ALL 12 PHASES, INDEPENDENT AUDIT FINDINGS (`F-01`..`F-04`), FULL RECORD-LEVEL SHA-256 COMPARISON & GIT BASELINE COMPLETED**
@@ -15,7 +15,7 @@
 | # | Acceptance Criterion | Verification Result | Status |
 |---:|---|---|---|
 | 1 | Original reference project (`marsscorp-retailshop-mgm/`) is completely untouched | Verified `0` modified/deleted/untracked files via `git -C marsscorp-retailshop-mgm status --short` (HEAD `eea00fd user log done`) & untouched `marsscorp-temp-db.sql` (`306,430` bytes, `SHA256: F111B62B0BF94449582C0EAD713F6A542FCD3F90CFDCB032D9A74EB173EEF614`) | **VERIFIED** |
-| 2 | Target project lives directly in `marss-corp-temp/` with a verified Git baseline & clean working tree | Verified initial baseline commit `__BASELINE_SHORT_HASH__` (`chore: establish verified MARSS Laravel migration baseline`) on branch `main`; `git status --short` is empty (`0` uncommitted files); `.gitignore` excludes `.env`, `/vendor`, `/node_modules`, `/marsscorp-retailshop-mgm/`, `/marsscorp-temp-db.sql` | **VERIFIED** |
+| 2 | Target project lives directly in `marss-corp-temp/` with a verified Git baseline & clean working tree | Verified initial baseline commit `f48462a` (`chore: establish verified MARSS Laravel migration baseline`) on branch `main`; `git status --short` is empty (`0` uncommitted files); `.gitignore` excludes `.env`, `/vendor`, `/node_modules`, `/marsscorp-retailshop-mgm/`, `/marsscorp-temp-db.sql` | **VERIFIED** |
 | 3 | Separate database `marsscorp-temp-db` created, imported, and verified (`Finding F-01`) | Verified **`55` original tables + `3` incremental tables (`user_activity_logs`, `investor_infos`, `invests` created by `2` guarded batch-9 migration files) = `58` total tables** (`64` rows in `migrations`, `0` records lost). Confirmed `stock_repair_executions` is absent (`NOT APPLICABLE`). | **VERIFIED** |
 | 4 | Retail and Battery modules are 100% isolated in Models, Services, Livewire, Controllers & Routes | Verified `0` cross-module imports across 160 PHP files + 12-point `CrossModuleIsolationTest` (`30` assertions) | **VERIFIED** |
 | 5 | All 15 confirmed legacy financial, locking, profile & crash defects (`FIN-01` through `FIN-15`) resolved & tested (`Finding F-02`) | Verified via `FinancialReconciliationService` & `30` automated PHPUnit tests (`278` assertions), including dedicated `FIN-13`, `FIN-14`, `FIN-15` regression tests | **FIXED & VERIFIED** |
@@ -60,7 +60,7 @@
    - `16` original tables have identical `AUTO_INCREMENT` counters; `39` original tables have higher next-sequence counters (`migrations` `+2` from Batch-9 migrations; `38` domain tables `+8` to `+75` from non-transactional InnoDB sequence increments during rolled-back `DatabaseTransactions` PHPUnit tests, with `0` rows persisted).
 3. **Git Baseline & Working Tree Status:**
    - **Branch:** `main`
-   - **Initial Baseline Commit:** `__BASELINE_SHORT_HASH__` (`__BASELINE_COMMIT_HASH__` — `chore: establish verified MARSS Laravel migration baseline`, `542` tracked files)
+   - **Initial Baseline Commit:** `f48462a` (`f48462a4377608f9eb0d66e9f683e21d5ce2978e` — `chore: establish verified MARSS Laravel migration baseline`, `542` tracked files)
    - **Final `git status --short` Output:** Empty (`0` modified, `0` staged, `0` untracked files).
    - **Reference Project Status:** `git -C f:\Running-work\marss-corp-temp\marsscorp-retailshop-mgm status --short` is empty at commit `eea00fd user log done`.
    - **Original SQL Dump Status:** `f:\Running-work\marss-corp-temp\marsscorp-temp-db.sql` is `306,430` bytes (`SHA256: F111B62B0BF94449582C0EAD713F6A542FCD3F90CFDCB032D9A74EB173EEF614`).

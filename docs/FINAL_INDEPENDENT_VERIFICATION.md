@@ -20,7 +20,7 @@
 | **6** | Actual PHPUnit output: `30` tests, `278` assertions, `0` failures and `0` errors | Live re-execution of `php artisan test --testdox` | **`VERIFIED` (`OK (30 tests, 278 assertions)`, `0` failures, `0` errors, `5.15s`)** | None — executed live during this read-only validation pass. |
 | **7** | Historical database preservation using available before/after evidence | Full record-by-record, PK-by-PK, and column-by-column SHA-256 comparison against temporary DB `marsscorp_audit_ref_tmp` freshly imported from `marsscorp-temp-db.sql` (Section 10.1) | **`PRESERVED` & `VERIFIED` (`54/55` original tables have an exact 100% raw SHA-256 match; `1/55` table `migrations` matches 100% on all `62` historical rows `id=1..62` + `2` Batch-9 incremental rows `id=63, 64`; `0` historical fields altered)** | None — full record-level cryptographic comparison completed across all 55 original tables (`39` non-transactional InnoDB `AUTO_INCREMENT` sequence advances from rolled-back test runs documented separately in Section 10.1). |
 | **8** | Original reference project and SQL dump integrity | Live `git -C marsscorp-retailshop-mgm status --short`, `git log -n 3 --oneline`, `Get-FileHash marsscorp-temp-db.sql`, and byte-length check | **`PRESERVED` & `VERIFIED` (`marsscorp-retailshop-mgm` has `0` modified/untracked/deleted files at commit `eea00fd`; `marsscorp-temp-db.sql` is `306,430` bytes, `SHA256: F111B62B0BF94449582C0EAD713F6A542FCD3F90CFDCB032D9A74EB173EEF614`)** | Note: An earlier doc (`FINAL_AUDIT_EVIDENCE.md` Section 8) cited `eb399f4` as the commit hash, whereas the live `git -C marsscorp-retailshop-mgm log -n 3 --oneline` head commit is `eea00fd user log done` (with `0` working-tree diffs). Also, the original archive `marsscorp-retailshop-mgm(4).zip` is not stored inside `f:\Running-work\marss-corp-temp\`; the extracted git repo `f:\Running-work\marss-corp-temp\marsscorp-retailshop-mgm\` is the self-verifying Git reference. |
-| **9** | Git working tree status and exact modified-file inventory | Pre-commit safety audit (`.gitignore`, `.env.example`, `542`-file staging check) + initial baseline commit `__BASELINE_SHORT_HASH__` (`chore: establish verified MARSS Laravel migration baseline`) + doc closure commit on `main` (Section 10.2) | **`VERIFIED` (Clean working tree: `git status --short` is empty; initial baseline commit `__BASELINE_SHORT_HASH__` established on `main`)** | None — initial Git baseline commit exists on `main` and working tree is 100% clean. |
+| **9** | Git working tree status and exact modified-file inventory | Pre-commit safety audit (`.gitignore`, `.env.example`, `542`-file staging check) + initial baseline commit `f48462a` (`chore: establish verified MARSS Laravel migration baseline`) + doc closure commit on `main` (Section 10.2) | **`VERIFIED` (Clean working tree: `git status --short` is empty; initial baseline commit `f48462a` established on `main`)** | None — initial Git baseline commit exists on `main` and working tree is 100% clean. |
 
 ---
 
@@ -528,8 +528,8 @@ Out of the `55` original tables, `16` tables have identical `AUTO_INCREMENT` met
   5. **Staging Inventory Audit (`542` tracked files):** Verified `0` `.env` files, `0` `.sql` dumps, `0` reference-project files, `0` private keys/certificates, `0` `vendor/` or `node_modules/` files, and `0` runtime logs/sessions/caches inside `storage/` (only `.gitignore` files in `storage/`).
 - **Initial Baseline Commit Created:**
   - **Commit Message:** `chore: establish verified MARSS Laravel migration baseline`
-  - **Initial Baseline Commit Hash:** `__BASELINE_SHORT_HASH__` (`__BASELINE_COMMIT_HASH__`)
-  - *(Note: Because a Git commit's SHA-1 hash is computed over the contents of all tracked files in its tree, a commit cannot self-contain its own SHA-1 string. Commit `__BASELINE_SHORT_HASH__` is the initial baseline commit `chore: establish verified MARSS Laravel migration baseline`, and the immediate follow-up `HEAD` commit `docs: record initial baseline commit hash in final verification reports` records `__BASELINE_SHORT_HASH__` in `docs/FINAL_INDEPENDENT_VERIFICATION.md` and `docs/FINAL_ACCEPTANCE_REPORT.md` so the working tree is 100% clean.)*
+  - **Initial Baseline Commit Hash:** `f48462a` (`f48462a4377608f9eb0d66e9f683e21d5ce2978e`)
+  - *(Note: Because a Git commit's SHA-1 hash is computed over the contents of all tracked files in its tree, a commit cannot self-contain its own SHA-1 string. Commit `f48462a` is the initial baseline commit `chore: establish verified MARSS Laravel migration baseline`, and the immediate follow-up `HEAD` commit `docs: record initial baseline commit hash in final verification reports` records `f48462a` in `docs/FINAL_INDEPENDENT_VERIFICATION.md` and `docs/FINAL_ACCEPTANCE_REPORT.md` so the working tree is 100% clean.)*
 - **Post-Commit Verification Outputs:**
   - `git status --short` (in `f:\Running-work\marss-corp-temp\`):
     ```text
@@ -538,7 +538,7 @@ Out of the `55` original tables, `16` tables have identical `AUTO_INCREMENT` met
   - `git log --oneline`:
     ```text
     <HEAD>  docs: record initial baseline commit hash in final verification reports
-    __BASELINE_SHORT_HASH__ chore: establish verified MARSS Laravel migration baseline
+    f48462a chore: establish verified MARSS Laravel migration baseline
     ```
   - Reference Repository Integrity (`git -C f:\Running-work\marss-corp-temp\marsscorp-retailshop-mgm status --short`):
     ```text
