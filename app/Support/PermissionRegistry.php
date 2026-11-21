@@ -95,10 +95,19 @@ final class PermissionRegistry
         ],
     ];
 
+    public static function isDeveloper(?User $user): bool
+    {
+        return $user?->isDeveloper() ?? false;
+    }
+
     public static function isAdmin(?User $user): bool
     {
         if (! $user) {
             return false;
+        }
+
+        if (self::isDeveloper($user)) {
+            return true;
         }
 
         $role = strtolower(trim((string) $user->role));
@@ -110,6 +119,10 @@ final class PermissionRegistry
     {
         if (! $user) {
             return false;
+        }
+
+        if (self::isDeveloper($user)) {
+            return true;
         }
 
         $role = strtolower(trim((string) $user->role));
@@ -124,7 +137,12 @@ final class PermissionRegistry
 
     public static function canViewActivityLog(?User $user): bool
     {
-        return self::isAdmin($user);
+        return self::isDeveloper($user);
+    }
+
+    public static function canManageUsers(?User $user): bool
+    {
+        return self::isDeveloper($user);
     }
 
     /**

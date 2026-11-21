@@ -15,7 +15,7 @@
                 <tr><th class="px-3 py-3">Date</th>@if($canViewProfit)<th class="px-3 py-3 text-right">Cost</th>@endif<th class="px-3 py-3 text-right">Sales</th><th class="px-3 py-3 text-right">Paid</th><th class="px-3 py-3 text-right">Expense</th>@if($canViewProfit)<th class="px-3 py-3 text-right">Net Profit</th>@endif</tr>
             </thead>
             <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-                @forelse($summary['rows'] as $r)
+                @forelse($rows as $r)
                     <tr><td class="px-3 py-2 font-bold">{{ $r['date'] }}</td>@if($canViewProfit)<td class="px-3 py-2 text-right">{{ Money::formatBd($r['cost']) }}</td>@endif<td class="px-3 py-2 text-right font-bold">{{ Money::formatBd($r['sales']) }}</td><td class="px-3 py-2 text-right text-emerald-700">{{ Money::formatBd($r['paid']) }}</td><td class="px-3 py-2 text-right text-rose-600">{{ Money::formatBd($r['expense']) }}</td>@if($canViewProfit)<td class="px-3 py-2 text-right font-extrabold text-teal-700">{{ Money::formatBd($r['net_profit']) }}</td>@endif</tr>
                 @empty
                     <tr data-empty-row="true"><td colspan="6" class="px-4 py-8 text-center text-slate-500">No records in selected range.</td></tr>
@@ -25,5 +25,6 @@
                 <tr><th class="px-3 py-3">Totals</th>@if($canViewProfit)<th class="px-3 py-3 text-right">{{ Money::formatBd($t['cost']) }}</th>@endif<th class="px-3 py-3 text-right">{{ Money::formatBd($t['sales']) }}</th><th class="px-3 py-3 text-right text-emerald-700">{{ Money::formatBd($t['paid']) }}</th><th class="px-3 py-3 text-right text-rose-600">{{ Money::formatBd($t['expense']) }}</th>@if($canViewProfit)<th class="px-3 py-3 text-right text-teal-700">{{ Money::formatBd($t['net_profit']) }}</th>@endif</tr>
             </tfoot>
         </table>
+        <div class="p-3 border-t border-slate-200 dark:border-slate-800">{{ $rows->links() }}</div>
     </div>
 </div>

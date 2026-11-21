@@ -22,12 +22,13 @@
         <table id="batPersonalTable" class="w-full text-xs sm:text-sm text-left">
             <thead class="bg-[#15803d] text-white text-xs uppercase"><tr><th class="px-3 py-3">Date</th><th class="px-3 py-3">Category</th><th class="px-3 py-3">Details</th><th class="px-3 py-3 text-right">Amount</th></tr></thead>
             <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-                @forelse($data['expenses'] as $e)
+                @forelse($expenses as $e)
                     <tr><td class="px-3 py-2">{{ $e->date }}</td><td class="px-3 py-2 font-bold">{{ $e->expenseType?->type_name }}</td><td class="px-3 py-2">{{ $e->expense_details }}</td><td class="px-3 py-2 text-right font-bold text-rose-600">{{ Money::formatBd($e->expense_amount) }}</td></tr>
                 @empty
                     <tr data-empty-row="true"><td colspan="4" class="px-4 py-8 text-center text-slate-500">No Battery personal expenses in range.</td></tr>
                 @endforelse
             </tbody>
         </table>
+        <div class="p-3 border-t border-slate-200 dark:border-slate-800">{{ $expenses->links() }}</div>
     </div>
 </div>

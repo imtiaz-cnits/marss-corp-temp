@@ -25,7 +25,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-                    @forelse($summary['rows'] as $r)
+                    @forelse($rows as $r)
                         <tr>
                             <td class="px-3 py-2 font-bold">{{ $r['date'] }}</td>
                             @if($canViewProfit)<td class="px-3 py-2 text-right tabular-nums">{{ Money::formatBd($r['cost']) }}</td>@endif
@@ -56,5 +56,6 @@
                 </tfoot>
             </table>
         </div>
+        <div class="p-3 border-t border-slate-200 dark:border-slate-800">{{ $rows->links() }}</div>
     </div>
 </div>

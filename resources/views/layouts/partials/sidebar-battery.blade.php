@@ -19,7 +19,7 @@
 <div
     id="sidebar-slider-wrapper"
     x-data="{ panel: '{{ $activePanel }}' }"
-    class="relative flex-1 w-full overflow-hidden"
+    class="relative flex-1 min-h-0 w-full overflow-hidden"
 >
     {{-- Panel 1: Main Battery Menu (Exact 12-item hierarchy with Collapsed Hover Flyouts & Tooltips) --}}
     <div
@@ -229,8 +229,7 @@
             </li>
             @endif
 
-            {{-- 12. Settings (Has Submenu + Collapsed Flyout) --}}
-            @if($user->canAccess('user'))
+            {{-- 12. Settings (Profile for all users; User List & Activity Log strictly for Developer ONLY) --}}
             <li class="sidebar-item has-submenu relative group">
                 <button type="button" @click="if (!sidebarCollapsed) panel = 'settings'" class="sidebar-drilldown-trigger w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13.5px] font-medium text-slate-100 hover:text-white hover:bg-white/15 transition-all cursor-pointer {{ $activePanel === 'settings' ? 'sidebar-active-parent' : '' }}">
                     <span class="flex items-center gap-2.5 min-w-0">
@@ -248,15 +247,16 @@
                         <span class="text-[9.5px] font-semibold text-emerald-200/80 bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-400/30">Menu</span>
                     </div>
                     <ul class="py-0.5 px-1 space-y-0.5">
+                        @if($user->isDeveloper())
                         <li><a href="{{ route('settings.users') }}" wire:navigate class="sidebar-flyout-link {{ request()->routeIs('settings.users') ? 'active-flyout-link' : '' }}"><i class="fa-solid fa-user-gear text-[10px] text-emerald-300/80 w-4 text-center"></i><span>User List &amp; Roles</span></a></li>
+                        @endif
                         <li><a href="{{ route('settings.profile') }}" wire:navigate class="sidebar-flyout-link {{ request()->routeIs('settings.profile') ? 'active-flyout-link' : '' }}"><i class="fa-solid fa-circle-user text-[10px] text-emerald-300/80 w-4 text-center"></i><span>Profile</span></a></li>
-                        @if($user->isAdmin())
+                        @if($user->isDeveloper())
                         <li><a href="{{ route('settings.activity-log') }}" wire:navigate class="sidebar-flyout-link {{ request()->routeIs('settings.activity-log') ? 'active-flyout-link' : '' }}"><i class="fa-solid fa-clock-rotate-left text-[10px] text-emerald-300/80 w-4 text-center"></i><span>User Activity Log</span></a></li>
                         @endif
                     </ul>
                 </div>
             </li>
-            @endif
         </ul>
     </div>
 
@@ -323,15 +323,17 @@
         </ul>
     </div>
 
-    {{-- Submenu Panel: Settings --}}
+    {{-- Submenu Panel: Settings (Profile for all users; User List & Activity Log strictly for Developer ONLY) --}}
     <div :class="(!sidebarCollapsed && panel === 'settings') ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'" class="sidebar-submenu-panel absolute inset-0 overflow-y-auto py-2 px-2.5 transition-transform duration-300 ease-in-out">
         <button type="button" @click="panel = 'main'" class="w-full flex items-center gap-2.5 px-3 py-2.5 mb-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-emerald-100 text-sm font-semibold cursor-pointer">
             <i class="fa-solid fa-chevron-left text-xs text-emerald-300"></i><span class="truncate">Settings</span>
         </button>
         <ul class="space-y-1 text-[13px]">
+            @if($user->isDeveloper())
             <li><a href="{{ route('settings.users') }}" wire:navigate class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl {{ request()->routeIs('settings.users') ? 'bg-white/20 text-white font-semibold' : 'text-slate-200 hover:bg-white/10 hover:text-white' }}"><i class="fa-solid fa-user-gear w-4 text-center text-emerald-300"></i><span>User List &amp; Roles</span></a></li>
+            @endif
             <li><a href="{{ route('settings.profile') }}" wire:navigate class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl {{ request()->routeIs('settings.profile') ? 'bg-white/20 text-white font-semibold' : 'text-slate-200 hover:bg-white/10 hover:text-white' }}"><i class="fa-solid fa-circle-user w-4 text-center text-emerald-300"></i><span>Profile</span></a></li>
-            @if($user->isAdmin())
+            @if($user->isDeveloper())
             <li><a href="{{ route('settings.activity-log') }}" wire:navigate class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl {{ request()->routeIs('settings.activity-log') ? 'bg-white/20 text-white font-semibold' : 'text-slate-200 hover:bg-white/10 hover:text-white' }}"><i class="fa-solid fa-clock-rotate-left w-4 text-center text-emerald-300"></i><span>User Activity Log</span></a></li>
             @endif
         </ul>

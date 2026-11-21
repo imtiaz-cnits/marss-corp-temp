@@ -19,7 +19,6 @@
                 </select>
                 <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search name, mobile, address..." class="h-9 px-3 w-64 rounded-xl border-[1.5px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm">
             </div>
-            <x-ui.export-buttons table-id="retailCustomersTable" filename="retail-customers" title="MARSS Retail Customers" />
         </div>
         <div class="overflow-x-auto">
             <table id="retailCustomersTable" data-export-skip-last="true" class="w-full text-xs sm:text-sm text-left">

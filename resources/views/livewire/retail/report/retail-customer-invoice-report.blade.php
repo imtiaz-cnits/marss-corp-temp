@@ -47,5 +47,6 @@
                 </tfoot>
             </table>
         </div>
+        <div class="p-3 border-t border-slate-200 dark:border-slate-800">{{ $orders->links() }}</div>
     </div>
 </div>

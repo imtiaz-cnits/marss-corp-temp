@@ -12,7 +12,7 @@
     <button type="button" onclick="window.print()" class="h-10 px-5 rounded-xl bg-emerald-700 text-white text-sm font-bold inline-flex items-center gap-2 cursor-pointer"><i class="fa-solid fa-print"></i> Print Purchase</button>
 </div>
 
-<div class="invoice-sheet bg-white border border-slate-300 shadow-xl w-full max-w-[8in] min-h-[10.5in] mx-auto p-6 flex flex-col justify-between text-black">
+<div class="invoice-sheet bg-white border border-slate-300 shadow-xl w-full max-w-[8in] min-h-[10.5in] mx-auto p-4 flex flex-col justify-between text-black">
     <div>
         <div class="flex items-start justify-between gap-3 border-b-2 border-[#15803d] pb-3">
             <div class="flex items-center gap-2.5">
@@ -73,7 +73,7 @@
         </div>
     </div>
 
-    <div class="pt-12">
+    <div class="print-footer-bottom mt-auto pt-12">
         <div class="flex justify-between text-xs font-bold mb-4">
             <div class="w-40 text-center border-t border-black pt-1">Supplier Signature</div>
             <div class="w-44 text-center border-t border-black pt-1">Authorized Signatory</div>

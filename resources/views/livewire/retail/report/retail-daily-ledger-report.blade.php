@@ -31,7 +31,7 @@
                         <td class="px-3 py-2.5">{{ $startDate }}</td><td class="px-3 py-2.5" colspan="6">Opening Cash Balance Brought Forward</td>
                         <td class="px-3 py-2.5 text-right tabular-nums">{{ Money::formatBd($ledger['opening_balance']) }}</td>
                     </tr>
-                    @forelse($ledger['entries'] as $row)
+                    @forelse($entries as $row)
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                             <td class="px-3 py-2 whitespace-nowrap text-slate-500">{{ $row['date'] }}</td>
                             <td class="px-3 py-2 font-semibold">{{ $row['type'] }}</td>
@@ -56,5 +56,6 @@
                 </tfoot>
             </table>
         </div>
+        <div class="p-3 border-t border-slate-200 dark:border-slate-800">{{ $entries->links() }}</div>
     </div>
 </div>

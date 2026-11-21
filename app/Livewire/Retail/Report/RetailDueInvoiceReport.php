@@ -7,15 +7,35 @@ use App\Support\DateFilter;
 use App\Support\Money;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 #[Title('Retail Due Invoice Report')]
 class RetailDueInvoiceReport extends Component
 {
+    use WithPagination;
+
     public string $search = '';
 
     public string $startDate = '';
 
     public string $endDate = '';
+
+    public int $perPage = 15;
+
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedStartDate(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedEndDate(): void
+    {
+        $this->resetPage();
+    }
 
     public function render()
     {
@@ -31,11 +51,12 @@ class RetailDueInvoiceReport extends Component
             DateFilter::applyInvoiceDateFilter($query, 'invoice_date', $this->startDate ?: null, $this->endDate ?: null);
         }
 
-        $orders = $query->get();
+        $totalDue = Money::sum((clone $query)->pluck('due_amount'));
+        $orders = $query->paginate($this->perPage);
 
         return view('livewire.retail.report.retail-due-invoice-report', [
             'orders' => $orders,
-            'totalDue' => Money::sum($orders->pluck('due_amount')),
+            'totalDue' => $totalDue,
         ]);
     }
 }

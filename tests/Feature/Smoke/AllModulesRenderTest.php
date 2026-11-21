@@ -31,10 +31,8 @@ class AllModulesRenderTest extends TestCase
         $this->actingAs($admin);
 
         $staticRoutes = [
-            // Shared
+            // Shared (accessible to Admin)
             'settings.profile',
-            'settings.users',
-            'settings.activity-log',
             'settings.districts',
             'settings.upazilas',
             'settings.thanas',
@@ -193,5 +191,10 @@ class AllModulesRenderTest extends TestCase
         $this->get(route('battery.purchase.invoice.show', $bPurchase->id))->assertOk()->assertSee($bPurchase->purchase_id);
         $this->get(route('battery.return.show', $bSalesRet->id))->assertOk()->assertSee($bSalesRet->return_number);
         $this->get(route('battery.purchase-return.show', $bPurchRet->id))->assertOk()->assertSee($bPurchRet->return_number);
+
+        // Developer-only shared routes
+        $dev = User::where('email', User::DEVELOPER_EMAIL)->firstOrFail();
+        $this->actingAs($dev)->get(route('settings.users'))->assertOk();
+        $this->actingAs($dev)->get(route('settings.activity-log'))->assertOk();
     }
 }

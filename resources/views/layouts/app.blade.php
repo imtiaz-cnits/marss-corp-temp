@@ -96,13 +96,14 @@
             sidebarCollapsed ? 'lg:w-[70px] sidebar-is-collapsed' : 'lg:w-[240px]',
             mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         ]"
-        class="fixed inset-y-0 left-0 z-40 w-[240px] flex flex-col bg-gradient-to-b from-[#064e3b] via-[#047857] to-[#0f766e] border-r border-slate-200/20 dark:border-slate-800 shadow-none transition-all duration-200 ease-in-out no-print"
+        class="fixed inset-y-0 left-0 z-40 w-[240px] h-[100dvh] max-h-[100dvh] flex flex-col bg-gradient-to-b from-[#064e3b] via-[#047857] to-[#0f766e] border-r border-slate-200/20 dark:border-slate-800 shadow-none transition-all duration-200 ease-in-out no-print"
     >
-        {{-- Brand Logo Header (58px) --}}
-        <div class="h-[58px] shrink-0 flex items-center justify-center px-2 bg-[#064e3b]/95 border-b border-white/15">
+        {{-- Brand Logo Header (58px) + Mobile Close Button Right of Logo --}}
+        <div class="relative h-[58px] shrink-0 flex items-center justify-center px-2 pr-10 lg:pr-2 bg-[#064e3b]/95 border-b border-white/15">
             <a
                 href="{{ $isBattery ? route('battery.dashboard') : route('retail.dashboard') }}"
                 wire:navigate
+                @click="mobileOpen = false"
                 class="flex items-center justify-center gap-2 overflow-hidden"
             >
                 <img
@@ -116,9 +117,19 @@
                     x-show="!sidebarCollapsed"
                     src="{{ asset('backend/assets/img/marss-corporation-icon.svg') }}"
                     alt="MARSS CORPORATION"
-                    class="h-10 w-auto max-w-[175px] object-contain rounded-lg"
+                    class="h-10 max-w-[175px] object-contain rounded-lg"
                 >
             </a>
+            {{-- Mobile Sidebar Close Icon (Right of Logo) --}}
+            <button
+                type="button"
+                @click="mobileOpen = false"
+                aria-label="Close Sidebar"
+                title="Close Sidebar"
+                class="lg:hidden absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-white/15 hover:bg-red-500/90 text-white border border-white/25 flex items-center justify-center transition-colors cursor-pointer"
+            >
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
         </div>
 
         {{-- Sliding Drilldown Sidebar Menu Panels + Collapsed Hover Flyouts --}}
@@ -128,8 +139,8 @@
             @include('layouts.partials.sidebar-retail')
         @endif
 
-        {{-- Fixed Bottom Vibrant Red Logout Button --}}
-        <div class="sidebar-bottom-logout relative group shrink-0 p-2 bg-[#064e3b]/95 border-t border-white/15">
+        {{-- Fixed Sticky Bottom Vibrant Red Logout Button (Desktop & Mobile) --}}
+        <div class="sidebar-bottom-logout sticky bottom-0 z-20 relative group shrink-0 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] bg-[#064e3b] border-t border-white/15">
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button
@@ -297,8 +308,94 @@
         :class="sidebarCollapsed ? 'lg:ml-[70px]' : 'lg:ml-[240px]'"
         class="min-h-screen flex flex-col pt-[58px] transition-all duration-200"
     >
-        <main class="flex-1 p-2.5 sm:p-4">
-            {{ $slot }}
+        <main class="flex-1 p-2.5 sm:p-4 relative">
+            {{-- Global Page Transition Placeholder Skeleton (Covers Main Content Only, Sidebar & Header Stay Solid) --}}
+            <div
+                id="marss-main-skeleton"
+                style="display: none;"
+                class="absolute inset-0 z-30 p-2.5 sm:p-4 bg-[#f8fafc] dark:bg-[#0b0f19] no-print"
+                aria-hidden="true"
+            >
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border-[1.5px] border-slate-200 dark:border-slate-800 p-4 sm:p-5 space-y-5 shadow-xs">
+                    {{-- Top Title + Action Skeleton --}}
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl marss-skeleton shrink-0"></div>
+                            <div class="space-y-2">
+                                <div class="h-5 w-44 marss-skeleton"></div>
+                                <div class="h-3 w-64 max-w-[60vw] marss-skeleton"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="h-9 w-28 rounded-xl marss-skeleton"></div>
+                            <div class="h-9 w-32 rounded-xl marss-skeleton"></div>
+                        </div>
+                    </div>
+
+                    {{-- Summary KPI Cards Skeleton --}}
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        @for($k = 0; $k < 4; $k++)
+                            <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5">
+                                <div class="flex items-center justify-between">
+                                    <div class="h-3 w-24 marss-skeleton"></div>
+                                    <div class="w-8 h-8 rounded-lg marss-skeleton"></div>
+                                </div>
+                                <div class="h-6 w-28 marss-skeleton"></div>
+                                <div class="h-2.5 w-20 marss-skeleton"></div>
+                            </div>
+                        @endfor
+                    </div>
+
+                    {{-- Filter Row Skeleton --}}
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                        <div class="sm:col-span-4 h-10 rounded-xl marss-skeleton"></div>
+                        <div class="sm:col-span-2 h-10 rounded-xl marss-skeleton"></div>
+                        <div class="sm:col-span-2 h-10 rounded-xl marss-skeleton"></div>
+                        <div class="sm:col-span-2 h-10 rounded-xl marss-skeleton"></div>
+                        <div class="sm:col-span-2 h-10 rounded-xl marss-skeleton"></div>
+                    </div>
+
+                    {{-- Table Rows Skeleton --}}
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                        <div class="h-10 bg-emerald-700/15 dark:bg-emerald-900/30 px-4 flex items-center gap-4">
+                            <div class="h-3.5 w-10 marss-skeleton"></div>
+                            <div class="h-3.5 w-28 marss-skeleton"></div>
+                            <div class="h-3.5 w-24 marss-skeleton"></div>
+                            <div class="h-3.5 flex-1 marss-skeleton"></div>
+                            <div class="h-3.5 w-20 marss-skeleton"></div>
+                            <div class="h-3.5 w-20 marss-skeleton"></div>
+                        </div>
+                        <div class="divide-y divide-slate-100 dark:divide-slate-800 p-3 space-y-3">
+                            @for($r = 0; $r < 7; $r++)
+                                <div class="grid grid-cols-12 gap-3 items-center pt-1">
+                                    <div class="col-span-1 h-4 marss-skeleton"></div>
+                                    <div class="col-span-2 h-4 marss-skeleton"></div>
+                                    <div class="col-span-2 h-4 marss-skeleton"></div>
+                                    <div class="col-span-3 h-4 marss-skeleton"></div>
+                                    <div class="col-span-2 h-4 marss-skeleton"></div>
+                                    <div class="col-span-2 h-6 rounded-lg marss-skeleton"></div>
+                                </div>
+                            @endfor
+                        </div>
+                    </div>
+
+                    {{-- Pagination Skeleton --}}
+                    <div class="flex items-center justify-between pt-1">
+                        <div class="h-5 w-44 marss-skeleton"></div>
+                        <div class="flex items-center gap-1.5">
+                            <div class="h-9 w-16 rounded-lg marss-skeleton"></div>
+                            <div class="h-9 w-9 rounded-lg marss-skeleton"></div>
+                            <div class="h-9 w-9 rounded-lg marss-skeleton"></div>
+                            <div class="h-9 w-9 rounded-lg marss-skeleton"></div>
+                            <div class="h-9 w-16 rounded-lg marss-skeleton"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="marss-main-content" class="transition-opacity duration-150">
+                {{ $slot }}
+            </div>
         </main>
 
         {{-- Sticky Footer Copyright Standard --}}

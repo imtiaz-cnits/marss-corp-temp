@@ -19,7 +19,7 @@
     </button>
 </div>
 
-<div class="invoice-sheet bg-white border border-slate-300 shadow-xl w-full max-w-[8in] min-h-[10.5in] mx-auto p-6 flex flex-col justify-between text-black">
+<div class="invoice-sheet bg-white border border-slate-300 shadow-xl w-full max-w-[8in] min-h-[10.5in] mx-auto p-4 flex flex-col justify-between text-black">
     <div>
         {{-- MARSS Corporation Brand Header --}}
         <div class="flex items-start justify-between gap-3 pb-3">
@@ -124,7 +124,7 @@
     </div>
 
     {{-- Bottom Signatures, CodeNext IT Footer & 50/50 Red-Green Color Bar --}}
-    <div class="pt-12">
+    <div class="print-footer-bottom mt-auto pt-12">
         <div class="flex justify-between items-end text-xs font-bold mb-4">
             <div class="w-40 text-center border-t border-black pt-1">Customer Signature</div>
             <div class="w-44 text-center border-t border-black pt-1">For MARSS CORPORATION</div>

@@ -13,7 +13,6 @@
                 <div class="w-32"><x-ui.date-picker wire:model.live="startDate" placeholder="From" /></div>
                 <div class="w-32"><x-ui.date-picker wire:model.live="endDate" placeholder="To" /></div>
             </div>
-            <x-ui.export-buttons table-id="retailCustColTable" filename="retail-customer-due-collections" title="MARSS Retail Customer Due Collections" />
         </div>
         <div class="overflow-x-auto">
             <table id="retailCustColTable" class="w-full text-xs sm:text-sm text-left">

@@ -14,7 +14,6 @@
     <div class="bg-white dark:bg-slate-900 rounded-2xl border-[1.5px] border-slate-300 dark:border-slate-700 shadow-xs overflow-hidden">
         <div class="p-3.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
             <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search supplier, company, mobile..." class="h-9 px-3 w-64 rounded-xl border-[1.5px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm">
-            <x-ui.export-buttons table-id="retailSuppliersTable" filename="retail-suppliers" title="MARSS Retail Suppliers" />
         </div>
         <div class="overflow-x-auto">
             <table id="retailSuppliersTable" data-export-skip-last="true" class="w-full text-xs sm:text-sm text-left">

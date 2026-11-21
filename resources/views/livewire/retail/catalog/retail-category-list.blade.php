@@ -12,7 +12,6 @@
     <div class="bg-white dark:bg-slate-900 rounded-2xl border-[1.5px] border-slate-300 dark:border-slate-700 shadow-xs overflow-hidden">
         <div class="p-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search category..." class="h-9 px-3 w-64 rounded-xl border-[1.5px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm">
-            <x-ui.export-buttons table-id="retailCategoriesTable" filename="retail-categories" title="MARSS Retail Categories" />
         </div>
         <div class="overflow-x-auto">
             <table id="retailCategoriesTable" data-export-skip-last="true" class="w-full text-sm text-left">

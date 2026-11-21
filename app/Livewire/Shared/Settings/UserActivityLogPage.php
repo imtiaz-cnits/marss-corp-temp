@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Shared\Settings;
 
+use App\Models\Shared\User;
 use App\Models\Shared\UserActivityLog;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -22,6 +23,13 @@ class UserActivityLogPage extends Component
 
     public int $perPage = 25;
 
+    public function mount(): void
+    {
+        if (! auth()->user()?->isDeveloper()) {
+            abort(403, 'Developer access required.');
+        }
+    }
+
     public function updatingSearch(): void
     {
         $this->resetPage();
@@ -35,7 +43,7 @@ class UserActivityLogPage extends Component
 
     public function clearAllLogs(): void
     {
-        if (! auth()->user()?->isAdmin()) {
+        if (! auth()->user()?->isDeveloper()) {
             abort(403);
         }
 
@@ -45,7 +53,9 @@ class UserActivityLogPage extends Component
 
     public function render()
     {
-        $query = UserActivityLog::query()->orderByDesc('id');
+        $query = UserActivityLog::query()
+            ->where(fn ($q) => $q->whereNull('user_email')->orWhereRaw('LOWER(user_email) != ?', [User::DEVELOPER_EMAIL]))
+            ->orderByDesc('id');
 
         if (trim($this->search) !== '') {
             $term = '%'.trim($this->search).'%';

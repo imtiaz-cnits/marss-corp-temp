@@ -27,7 +27,6 @@
                 <div class="w-32"><x-ui.date-picker wire:model.live="startDate" placeholder="From" /></div>
                 <div class="w-32"><x-ui.date-picker wire:model.live="endDate" placeholder="To" /></div>
             </div>
-            <x-ui.export-buttons table-id="retailExpTable" filename="retail-expenses" title="MARSS Retail Expenses" />
         </div>
         <div class="overflow-x-auto">
             <table id="retailExpTable" data-export-skip-last="true" class="w-full text-xs sm:text-sm text-left">

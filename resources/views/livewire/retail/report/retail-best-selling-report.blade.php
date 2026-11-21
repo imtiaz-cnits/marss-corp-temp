@@ -28,7 +28,7 @@
                     @forelse($rows as $idx => $r)
                         @php $profit = Money::sub($r->total_sales, $r->total_cost); @endphp
                         <tr>
-                            <td class="px-3 py-2 font-bold text-slate-500">{{ $idx + 1 }}</td>
+                            <td class="px-3 py-2 font-bold text-slate-500">{{ $rows->firstItem() + $idx }}</td>
                             <td class="px-3 py-2 font-bold">{{ $r->product_name }}</td>
                             <td class="px-3 py-2">{{ $r->brand_name ?: '—' }}</td>
                             <td class="px-3 py-2">{{ $r->category_name ?: '—' }}</td>
@@ -43,5 +43,6 @@
                 </tbody>
             </table>
         </div>
+        <div class="p-3 border-t border-slate-200 dark:border-slate-800">{{ $rows->links() }}</div>
     </div>
 </div>

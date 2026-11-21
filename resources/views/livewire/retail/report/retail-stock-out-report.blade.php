@@ -28,7 +28,7 @@
                     @forelse($products as $idx => $p)
                         @php $q = (int) round((float) ($p->quantity ?? 0)); @endphp
                         <tr>
-                            <td class="px-3 py-2 text-slate-500">{{ $idx + 1 }}</td>
+                            <td class="px-3 py-2 text-slate-500">{{ $products->firstItem() + $idx }}</td>
                             <td class="px-3 py-2 font-bold">{{ $p->product_name }}</td>
                             <td class="px-3 py-2">{{ $p->brand?->name ?? '—' }}</td>
                             <td class="px-3 py-2">{{ $p->category?->category_name ?? '—' }}</td>
@@ -41,5 +41,6 @@
                 </tbody>
             </table>
         </div>
+        <div class="p-3 border-t border-slate-200 dark:border-slate-800">{{ $products->links() }}</div>
     </div>
 </div>

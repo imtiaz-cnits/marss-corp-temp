@@ -2,7 +2,9 @@
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
             <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">My Profile</h1>
-            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Manage your account identity, avatar, and password security.</p>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                {{ $user->isDeveloper() ? 'Manage your account identity, avatar, and password security.' : 'Manage your profile photo, name, and email address.' }}
+            </p>
         </div>
     </div>
 
@@ -36,8 +38,15 @@
                         @error('name') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Email (Read-Only)</label>
-                        <input type="email" value="{{ $email }}" readonly class="w-full h-10 px-3 rounded-xl border-[1.5px] border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/60 text-sm text-slate-500">
+                        <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+                            Email {{ $user->isDeveloper() ? '(Protected)' : '' }}
+                        </label>
+                        @if($user->isDeveloper())
+                            <input type="email" value="{{ $email }}" readonly class="w-full h-10 px-3 rounded-xl border-[1.5px] border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/60 text-sm text-slate-500">
+                        @else
+                            <input type="email" wire:model="email" placeholder="Enter email address" class="w-full h-10 px-3 rounded-xl border-[1.5px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:border-emerald-700 outline-none">
+                            @error('email') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
+                        @endif
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Mobile</label>
@@ -58,6 +67,7 @@
                 </div>
             </form>
 
+            @if($user->isDeveloper())
             <form wire:submit="updatePassword" class="bg-white dark:bg-slate-900 rounded-2xl border-[1.5px] border-slate-300 dark:border-slate-700 p-5 shadow-xs space-y-4">
                 <h3 class="text-sm font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 border-b border-slate-200 dark:border-slate-800 pb-2">
                     <i class="fa-solid fa-shield-halved mr-1.5"></i> Change Password
@@ -86,6 +96,7 @@
                     </button>
                 </div>
             </form>
+            @endif
         </div>
     </div>
 </div>

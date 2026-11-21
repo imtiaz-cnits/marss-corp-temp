@@ -2,10 +2,12 @@
 
 namespace App\Livewire\Shared\Settings;
 
+use App\Models\Shared\User;
 use App\Services\Shared\ActivityLogger;
 use App\Services\Shared\SafeImageUploadService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -43,9 +45,17 @@ class UserProfilePage extends Component
 
         $this->validate([
             'name' => ['required', 'string', 'max:120'],
+            'email' => ['nullable', 'email', 'max:50', Rule::unique('users', 'email')->ignore($user->id)],
             'mobile' => ['nullable', 'string', 'max:30'],
             'avatar' => ['nullable', 'image', 'max:3072'],
         ]);
+
+        $cleanEmail = trim($this->email);
+        if (! $user->isDeveloper() && strtolower($cleanEmail) === User::DEVELOPER_EMAIL) {
+            $this->addError('email', 'This email address is reserved.');
+
+            return;
+        }
 
         if ($this->avatar) {
             $user->img_url = $uploads->store($this->avatar, 'user-profiles', $user->img_url);
@@ -53,6 +63,9 @@ class UserProfilePage extends Component
         }
 
         $user->name = trim($this->name);
+        if (! $user->isDeveloper()) {
+            $user->email = $cleanEmail !== '' ? strtolower($cleanEmail) : null;
+        }
         $user->mobile = trim($this->mobile);
         $user->save();
 
@@ -62,12 +75,16 @@ class UserProfilePage extends Component
 
     public function updatePassword(): void
     {
+        $user = Auth::user();
+        if (! $user?->isDeveloper()) {
+            abort(403, 'Only authorized developer can change passwords.');
+        }
+
         $this->validate([
             'current_password' => ['required', 'string'],
             'new_password' => ['required', 'string', 'min:6', 'confirmed'],
         ]);
 
-        $user = Auth::user();
         if (! Hash::check($this->current_password, (string) $user->password)) {
             $this->addError('current_password', 'Current password is incorrect.');
 

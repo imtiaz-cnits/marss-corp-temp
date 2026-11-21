@@ -272,6 +272,11 @@ table thead th[data-sortable="true"] {
 }
 table thead th[data-sortable="true"]:hover {
     background-color: #166534 !important;
+    color: #ffffff !important;
+}
+table thead th[data-sortable="true"]:hover .sort-icon {
+    color: #ffffff !important;
+    opacity: 0.9;
 }
 table thead th .sort-icon {
     display: inline-flex;
@@ -340,18 +345,52 @@ table thead th[data-sort-dir="desc"] .sort-icon {
     display: none;
 }
 
-/* Collapsed Sidebar (70px) Rules */
-aside.sidebar-is-collapsed,
-aside.sidebar-is-collapsed #sidebar-slider-wrapper,
-aside.sidebar-is-collapsed #sidebar-main-panel {
-    overflow: visible !important;
+/* Collapsed Sidebar (70px) Rules — Vertical Scroll with Thin Scrollbar + Fixed Escaping Flyouts */
+@media (min-width: 1024px) {
+    aside.sidebar-is-collapsed {
+        transform: none !important;
+        overflow: visible !important;
+    }
+}
+
+aside.sidebar-is-collapsed #sidebar-slider-wrapper {
+    overflow: hidden !important;
+    min-height: 0;
 }
 
 aside.sidebar-is-collapsed #sidebar-main-panel {
-    transform: translateX(0) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    transform: none !important;
     pointer-events: auto !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(167, 243, 208, 0.45) transparent;
+}
+
+/* Sleek Ultra-Thin Scrollbar inside Sidebar Panels (Collapsed & Expanded) */
+#sidebar-main-panel,
+.sidebar-submenu-panel {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(167, 243, 208, 0.4) transparent;
+}
+#sidebar-main-panel::-webkit-scrollbar,
+.sidebar-submenu-panel::-webkit-scrollbar {
+    width: 3px;
+}
+#sidebar-main-panel::-webkit-scrollbar-track,
+.sidebar-submenu-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+#sidebar-main-panel::-webkit-scrollbar-thumb,
+.sidebar-submenu-panel::-webkit-scrollbar-thumb {
+    background-color: rgba(167, 243, 208, 0.45);
+    border-radius: 9999px;
+}
+#sidebar-main-panel::-webkit-scrollbar-thumb:hover,
+.sidebar-submenu-panel::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(167, 243, 208, 0.85);
 }
 
 aside.sidebar-is-collapsed .sidebar-submenu-panel {
@@ -399,35 +438,38 @@ aside.sidebar-is-collapsed .sidebar-logout-btn {
     border-radius: 10px !important;
 }
 
-/* Collapsed Flyout Dropdown Box on Hover */
-aside.sidebar-is-collapsed .sidebar-item.has-submenu .sidebar-flyout {
-    display: block !important;
-    position: absolute;
-    left: 70px;
-    top: 0;
-    margin-left: 10px;
-    width: 230px;
-    padding: 8px;
-    border-radius: 14px;
-    background: linear-gradient(145deg, rgba(6, 78, 59, 0.98), rgba(4, 120, 87, 0.98));
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(52, 211, 153, 0.35);
-    box-shadow: 0 20px 40px -10px rgba(2, 44, 34, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateX(10px) scale(0.96);
-    transform-origin: left center;
-    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s;
-    z-index: 99999;
-    pointer-events: none;
-}
-aside.sidebar-is-collapsed .sidebar-item.has-submenu .sidebar-flyout.flyout-wide {
-    width: 260px;
+/* Collapsed Flyout Dropdown Box & Mini Tooltip (Hidden inside scrollable <aside>, rendered at ROOT document.body via #marss-sidebar-portal!) */
+aside.sidebar-is-collapsed .sidebar-item.has-submenu .sidebar-flyout,
+aside.sidebar-is-collapsed .sidebar-item .sidebar-mini-tooltip,
+aside.sidebar-is-collapsed .sidebar-bottom-logout .sidebar-mini-tooltip {
+    display: none !important;
 }
 
-/* Invisible hover bridge between 70px rail and flyout */
-aside.sidebar-is-collapsed .sidebar-item.has-submenu .sidebar-flyout::before {
+/* Root-Level Sidebar Portal (Always on top of everything, never clipped by vertical scroll) */
+#marss-sidebar-portal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 999999;
+    pointer-events: none;
+}
+#marss-sidebar-portal .portal-flyout {
+    position: fixed;
+    width: 235px;
+    padding: 8px;
+    border-radius: 14px;
+    background: linear-gradient(145deg, rgba(6, 78, 59, 0.99), rgba(4, 120, 87, 0.99));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(52, 211, 153, 0.4);
+    box-shadow: 0 22px 44px -10px rgba(2, 44, 34, 0.72), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+    pointer-events: auto;
+    animation: marssPortalIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#marss-sidebar-portal .portal-flyout.flyout-wide {
+    width: 265px;
+}
+#marss-sidebar-portal .portal-flyout::before {
     content: "";
     position: absolute;
     top: -12px;
@@ -436,28 +478,48 @@ aside.sidebar-is-collapsed .sidebar-item.has-submenu .sidebar-flyout::before {
     width: 20px;
     background: transparent;
 }
-
-/* Left caret pointer on flyout */
-aside.sidebar-is-collapsed .sidebar-item.has-submenu .sidebar-flyout::after {
+#marss-sidebar-portal .portal-flyout::after {
     content: "";
     position: absolute;
-    top: 16px;
+    top: var(--caret-top, 16px);
     left: -6px;
     width: 11px;
     height: 11px;
     background: #065f46;
-    border-left: 1px solid rgba(52, 211, 153, 0.4);
-    border-bottom: 1px solid rgba(52, 211, 153, 0.4);
+    border-left: 1px solid rgba(52, 211, 153, 0.45);
+    border-bottom: 1px solid rgba(52, 211, 153, 0.45);
     transform: rotate(45deg);
     border-bottom-left-radius: 2px;
 }
-
-aside.sidebar-is-collapsed .sidebar-item.has-submenu:hover .sidebar-flyout,
-aside.sidebar-is-collapsed .sidebar-item.has-submenu.flyout-open .sidebar-flyout {
-    opacity: 1 !important;
-    visibility: visible !important;
-    transform: translateX(0) scale(1) !important;
-    pointer-events: auto !important;
+#marss-sidebar-portal .portal-tooltip {
+    position: fixed;
+    transform: translateY(-50%);
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #064e3b, #047857);
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    border: 1px solid rgba(52, 211, 153, 0.4);
+    box-shadow: 0 12px 28px -5px rgba(2, 44, 34, 0.65);
+    pointer-events: none;
+}
+#marss-sidebar-portal .portal-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: -5px;
+    width: 9px;
+    height: 9px;
+    background: #064e3b;
+    border-left: 1px solid rgba(52, 211, 153, 0.4);
+    border-bottom: 1px solid rgba(52, 211, 153, 0.4);
+    transform: translateY(-50%) rotate(45deg);
+}
+@keyframes marssPortalIn {
+    from { opacity: 0; transform: translateX(8px) scale(0.97); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
 }
 
 /* Flyout Submenu Links */
@@ -472,6 +534,7 @@ aside.sidebar-is-collapsed .sidebar-item.has-submenu.flyout-open .sidebar-flyout
     color: rgba(241, 245, 249, 0.92);
     text-decoration: none;
     transition: all 0.16s ease;
+    cursor: pointer;
 }
 .sidebar-flyout-link:hover {
     background: rgba(255, 255, 255, 0.15);
@@ -485,48 +548,255 @@ aside.sidebar-is-collapsed .sidebar-item.has-submenu.flyout-open .sidebar-flyout
     box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
-/* Collapsed Mini Tooltip for Single Links */
-aside.sidebar-is-collapsed .sidebar-item .sidebar-mini-tooltip,
-aside.sidebar-is-collapsed .sidebar-bottom-logout .sidebar-mini-tooltip {
-    display: block !important;
-    position: absolute;
-    left: 70px;
-    top: 50%;
-    transform: translateY(-50%) translateX(8px);
-    margin-left: 10px;
-    padding: 6px 12px;
+/* =========================================================
+   5A. GLOBAL CUSTOM SELECT DROPDOWN (MARSS Theme + Auto Search > 8 Options)
+   ========================================================= */
+.marss-cs-native-hidden {
+    position: absolute !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+.marss-cs-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+}
+.marss-cs-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    background-color: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    color: #1e293b;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    user-select: none;
+}
+.marss-cs-trigger:hover {
+    border-color: #16a34a;
+}
+.marss-cs-trigger.is-open,
+.marss-cs-trigger:focus {
+    border-color: #15803d;
+    box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.16);
+    outline: none;
+}
+.marss-cs-trigger-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+.marss-cs-trigger-caret {
+    flex-shrink: 0;
+    color: #64748b;
+    transition: transform 0.18s ease;
+    font-size: 11px;
+}
+.marss-cs-trigger.is-open .marss-cs-trigger-caret {
+    transform: rotate(180deg);
+    color: #15803d;
+}
+.dark .marss-cs-trigger,
+[light-mode="dark"] .marss-cs-trigger {
+    background-color: #1e293b;
+    border-color: #334155;
+    color: #f1f5f9;
+}
+.dark .marss-cs-trigger:hover,
+[light-mode="dark"] .marss-cs-trigger:hover {
+    border-color: #22c55e;
+}
+#marss-cs-portal-menu {
+    position: fixed;
+    z-index: 999999;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 12px;
+    box-shadow: 0 18px 40px -8px rgba(15, 23, 42, 0.22), 0 4px 12px rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 290px;
+}
+.dark #marss-cs-portal-menu,
+[light-mode="dark"] #marss-cs-portal-menu {
+    background: #0f172a;
+    border-color: #334155;
+    box-shadow: 0 20px 44px rgba(0, 0, 0, 0.65);
+}
+.marss-cs-search-wrap {
+    padding: 8px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+    flex-shrink: 0;
+}
+.dark .marss-cs-search-wrap,
+[light-mode="dark"] .marss-cs-search-wrap {
+    background: #1e293b;
+    border-bottom-color: #334155;
+}
+.marss-cs-search-input {
+    width: 100%;
+    height: 34px;
+    padding: 0 10px 0 30px;
     border-radius: 8px;
-    background: linear-gradient(135deg, #064e3b, #047857);
-    color: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 12.5px;
+    font-weight: 500;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.marss-cs-search-input:focus {
+    border-color: #16a34a;
+    box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.18);
+}
+.dark .marss-cs-search-input,
+[light-mode="dark"] .marss-cs-search-input {
+    background: #0f172a;
+    border-color: #334155;
+    color: #f1f5f9;
+}
+.marss-cs-list {
+    overflow-y: auto;
+    padding: 5px;
+    flex: 1;
+    scrollbar-width: thin;
+    scrollbar-color: #16a34a transparent;
+}
+.marss-cs-list::-webkit-scrollbar {
+    width: 4px;
+}
+.marss-cs-list::-webkit-scrollbar-thumb {
+    background: #16a34a;
+    border-radius: 9999px;
+}
+.marss-cs-option {
+    padding: 7px 10px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #334155;
+    border-radius: 7px;
+    border-left: 3.5px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    transition: all 0.12s ease;
+    margin-bottom: 1px;
+}
+.marss-cs-option:hover,
+.marss-cs-option.is-focused {
+    background-color: #f0fdf4;
+    color: #15803d;
+    border-left-color: #16a34a;
+}
+.marss-cs-option.is-selected {
+    background: linear-gradient(90deg, #dcfce7 0%, #f0fdf4 100%);
+    color: #15803d;
+    border-left-color: #15803d;
+    font-weight: 700;
+}
+.marss-cs-option.is-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.dark .marss-cs-option,
+[light-mode="dark"] .marss-cs-option {
+    color: #cbd5e1;
+}
+.dark .marss-cs-option:hover,
+.dark .marss-cs-option.is-focused,
+[light-mode="dark"] .marss-cs-option:hover,
+[light-mode="dark"] .marss-cs-option.is-focused {
+    background-color: #1e293b;
+    color: #4ade80;
+    border-left-color: #22c55e;
+}
+.dark .marss-cs-option.is-selected,
+[light-mode="dark"] .marss-cs-option.is-selected {
+    background: rgba(22, 163, 74, 0.2);
+    color: #4ade80;
+    border-left-color: #22c55e;
+}
+.marss-cs-empty {
+    padding: 14px 10px;
+    text-align: center;
     font-size: 12px;
     font-weight: 600;
-    white-space: nowrap;
-    border: 1px solid rgba(52, 211, 153, 0.35);
-    box-shadow: 0 10px 25px -5px rgba(2, 44, 34, 0.6);
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
-    z-index: 99999;
+    color: #94a3b8;
+}
+
+/* =========================================================
+   5D. NEVER WRAP TAKA SYMBOL & AMOUNTS IN ANY TABLE (ALWAYS 1 LINE)
+   ========================================================= */
+table td.tabular-nums,
+table th.tabular-nums,
+table td.text-right,
+table th.text-right,
+table .marss-amount {
+    white-space: nowrap !important;
+}
+
+/* =========================================================
+   5B. POS NUMERIC INPUTS (Hide Spinners So Full Amounts Always Fit)
+   ========================================================= */
+.pos-num-input {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+.pos-num-input::-webkit-outer-spin-button,
+.pos-num-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* =========================================================
+   5C. GLOBAL LOADING PLACEHOLDER SKELETON SHIMMER EFFECT
+   ========================================================= */
+@keyframes marssShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+.marss-skeleton {
+    background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+    background-size: 200% 100%;
+    animation: marssShimmer 1.25s ease-in-out infinite;
+    border-radius: 8px;
+}
+.dark .marss-skeleton,
+[light-mode="dark"] .marss-skeleton {
+    background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+    background-size: 200% 100%;
+}
+.marss-inline-skeleton-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 25;
+    background: rgba(248, 250, 252, 0.88);
+    backdrop-filter: blur(2px);
+    padding: 14px;
+    border-radius: inherit;
     pointer-events: none;
 }
-aside.sidebar-is-collapsed .sidebar-item .sidebar-mini-tooltip::after,
-aside.sidebar-is-collapsed .sidebar-bottom-logout .sidebar-mini-tooltip::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: -5px;
-    width: 9px;
-    height: 9px;
-    background: #064e3b;
-    border-left: 1px solid rgba(52, 211, 153, 0.35);
-    border-bottom: 1px solid rgba(52, 211, 153, 0.35);
-    transform: translateY(-50%) rotate(45deg);
-}
-aside.sidebar-is-collapsed .sidebar-item:hover .sidebar-mini-tooltip,
-aside.sidebar-is-collapsed .sidebar-bottom-logout:hover .sidebar-mini-tooltip {
-    opacity: 1 !important;
-    visibility: visible !important;
-    transform: translateY(-50%) translateX(0) !important;
+.dark .marss-inline-skeleton-overlay,
+[light-mode="dark"] .marss-inline-skeleton-overlay {
+    background: rgba(15, 23, 42, 0.88);
 }
 
 /* =========================================================
@@ -591,6 +861,40 @@ aside.sidebar-is-collapsed .sidebar-bottom-logout:hover .sidebar-mini-tooltip {
 }
 .marss-modal-body form button[type="submit"]:hover {
     background: linear-gradient(135deg, #166534 0%, #15803d 100%) !important;
+}
+
+/* Sticky Fixed Modal Footer Action Bar (Matches Sticky Emerald Modal Header Project-Wide) */
+.marss-modal-body:has(form > div:last-child button) {
+    padding-bottom: 0 !important;
+}
+.marss-modal-body form > div:last-child:has(button),
+.marss-modal-footer {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 25 !important;
+    background-color: #ffffff !important;
+    margin-top: 16px !important;
+    margin-left: -16px !important;
+    margin-right: -16px !important;
+    padding: 12px 16px !important;
+    border-top: 1.5px solid #e2e8f0 !important;
+    box-shadow: 0 -6px 16px rgba(15, 23, 42, 0.06) !important;
+}
+@media (min-width: 640px) {
+    .marss-modal-body form > div:last-child:has(button),
+    .marss-modal-footer {
+        margin-left: -20px !important;
+        margin-right: -20px !important;
+        padding: 12px 20px !important;
+    }
+}
+.dark .marss-modal-body form > div:last-child:has(button),
+[light-mode="dark"] .marss-modal-body form > div:last-child:has(button),
+.dark .marss-modal-footer,
+[light-mode="dark"] .marss-modal-footer {
+    background-color: #0f172a !important;
+    border-top-color: #1e293b !important;
+    box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.35) !important;
 }
 
 /* =========================================================
@@ -665,16 +969,38 @@ span.flatpickr-weekday {
 }
 
 /* =========================================================
-   8. PRINT MEDIA ISOLATION
+   8. PRINT MEDIA ISOLATION (16px Gap All Around & Bottom Signature)
    ========================================================= */
+@page {
+    margin: 16px;
+}
 @media print {
     .no-print {
         display: none !important;
     }
-    body {
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
         background: #ffffff !important;
         color: #000000 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+    }
+    .print-sheet-page {
+        padding: 16px 16px 90px 16px !important;
+        box-sizing: border-box !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    .print-footer-bottom {
+        position: fixed !important;
+        bottom: 16px !important;
+        left: 16px !important;
+        right: 16px !important;
+        background: #ffffff !important;
+        padding-top: 12px !important;
+        margin: 0 !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
     }
 }

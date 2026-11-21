@@ -15,7 +15,7 @@
                 <tr><th class="px-3 py-3">Date</th><th class="px-3 py-3">Invoice</th><th class="px-3 py-3">Customer</th>@if($canViewProfit)<th class="px-3 py-3 text-right">Cost</th>@endif<th class="px-3 py-3 text-right">Sales</th><th class="px-3 py-3 text-right">Paid</th><th class="px-3 py-3 text-right">Due</th>@if($canViewProfit)<th class="px-3 py-3 text-right">Profit</th>@endif</tr>
             </thead>
             <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-                @forelse($report['rows'] as $r)
+                @forelse($rows as $r)
                     <tr>
                         <td class="px-3 py-2">{{ $r['date'] }}</td>
                         <td class="px-3 py-2 font-bold"><a href="{{ route('battery.invoice.show', $r['id']) }}" target="_blank" class="text-emerald-700 hover:underline">{{ $r['order_no'] }}</a></td>
@@ -34,5 +34,6 @@
                 <tr><th colspan="3" class="px-3 py-3 text-right">Totals:</th>@if($canViewProfit)<th class="px-3 py-3 text-right">{{ Money::formatBd($t['total_cost']) }}</th>@endif<th class="px-3 py-3 text-right">{{ Money::formatBd($t['selling_price']) }}</th><th class="px-3 py-3 text-right text-emerald-700">{{ Money::formatBd($t['paid_amount']) }}</th><th class="px-3 py-3 text-right text-rose-600">{{ Money::formatBd($t['due_amount']) }}</th>@if($canViewProfit)<th class="px-3 py-3 text-right text-teal-700">{{ Money::formatBd($t['profit']) }}</th>@endif</tr>
             </tfoot>
         </table>
+        <div class="p-3 border-t border-slate-200 dark:border-slate-800">{{ $rows->links() }}</div>
     </div>
 </div>

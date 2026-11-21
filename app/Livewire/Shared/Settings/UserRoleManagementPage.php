@@ -4,18 +4,20 @@ namespace App\Livewire\Shared\Settings;
 
 use App\Models\Shared\User;
 use App\Services\Shared\ActivityLogger;
+use App\Services\Shared\SafeImageUploadService;
 use App\Support\PermissionRegistry;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 #[Title('User List & Roles')]
 class UserRoleManagementPage extends Component
 {
-    use WithPagination;
+    use WithFileUploads, WithPagination;
 
     public string $search = '';
 
@@ -26,6 +28,8 @@ class UserRoleManagementPage extends Component
     public bool $showEditModal = false;
 
     public ?int $editingId = null;
+
+    public bool $editingIsDeveloper = false;
 
     public string $name = '';
 
@@ -39,8 +43,19 @@ class UserRoleManagementPage extends Component
 
     public string $status = 'approved';
 
+    public $avatar = null;
+
+    public string $currentAvatarUrl = '';
+
     /** @var array<string, bool> */
     public array $permissions = [];
+
+    public function mount(): void
+    {
+        if (! Auth::user()?->isDeveloper()) {
+            abort(403, 'Only authorized developer can manage users.');
+        }
+    }
 
     public function updatingSearch(): void
     {
@@ -54,7 +69,11 @@ class UserRoleManagementPage extends Component
 
     public function openCreateModal(): void
     {
-        $this->reset(['editingId', 'name', 'email', 'mobile', 'password']);
+        if (! Auth::user()?->isDeveloper()) {
+            abort(403);
+        }
+
+        $this->reset(['editingId', 'editingIsDeveloper', 'name', 'email', 'mobile', 'password', 'avatar', 'currentAvatarUrl']);
         $this->role = 'staff';
         $this->status = 'approved';
         $this->permissions = PermissionRegistry::roleDefaults('staff');
@@ -64,14 +83,21 @@ class UserRoleManagementPage extends Component
 
     public function openEditModal(int $id): void
     {
+        if (! Auth::user()?->isDeveloper()) {
+            abort(403);
+        }
+
         $user = User::findOrFail($id);
         $this->editingId = $user->id;
+        $this->editingIsDeveloper = $user->isDeveloper();
         $this->name = (string) $user->name;
-        $this->email = (string) $user->email;
+        $this->email = (string) ($user->email ?? '');
         $this->mobile = (string) ($user->mobile ?? '');
         $this->password = '';
-        $this->role = strtolower(trim((string) $user->role));
-        $this->status = strtolower(trim((string) $user->status)) ?: 'approved';
+        $this->avatar = null;
+        $this->currentAvatarUrl = $user->avatarUrl();
+        $this->role = $user->isDeveloper() ? 'super_admin' : strtolower(trim((string) $user->role));
+        $this->status = $user->isDeveloper() ? 'approved' : (strtolower(trim((string) $user->status)) ?: 'approved');
         $this->permissions = PermissionRegistry::effectiveFor($user);
         $this->resetValidation();
         $this->showEditModal = true;
@@ -93,8 +119,12 @@ class UserRoleManagementPage extends Component
         $this->showEditModal = false;
     }
 
-    public function createUser(): void
+    public function createUser(SafeImageUploadService $uploads): void
     {
+        if (! Auth::user()?->isDeveloper()) {
+            abort(403);
+        }
+
         $this->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:190', 'unique:users,email'],
@@ -102,15 +132,19 @@ class UserRoleManagementPage extends Component
             'password' => ['required', 'string', 'min:6'],
             'role' => ['required', Rule::in(['super_admin', 'admin', 'manager', 'staff', 'cashier', 'accountant'])],
             'status' => ['required', Rule::in(['approved', 'pending', 'rejected'])],
+            'avatar' => ['nullable', 'image', 'max:3072'],
         ]);
 
-        if ($this->role === 'super_admin' && ! Auth::user()?->isSuperAdmin()) {
-            $this->dispatch('toast', type: 'error', message: 'Only Super Admin can assign the Super Admin role.');
+        if (strtolower(trim($this->email)) === User::DEVELOPER_EMAIL) {
+            $this->dispatch('toast', type: 'error', message: 'This system email is reserved.');
 
             return;
         }
 
+        $imgUrl = $this->avatar ? $uploads->store($this->avatar, 'user-profiles') : null;
+
         $user = User::create([
+            'img_url' => $imgUrl,
             'name' => trim($this->name),
             'email' => strtolower(trim($this->email)),
             'mobile' => trim($this->mobile),
@@ -120,59 +154,80 @@ class UserRoleManagementPage extends Component
             'permissions' => $this->normalizePermissions(),
         ]);
 
+        $this->avatar = null;
         ActivityLogger::log('Create', 'Users & Roles', "Created user '{$user->name}' ({$user->role}, {$user->status}).", ['target_user_id' => $user->id]);
         $this->showCreateModal = false;
         $this->dispatch('toast', type: 'success', message: "User '{$user->name}' created successfully!");
     }
 
-    public function updateUser(): void
+    public function updateUser(SafeImageUploadService $uploads): void
     {
+        if (! Auth::user()?->isDeveloper()) {
+            abort(403);
+        }
+
         $user = User::findOrFail($this->editingId);
+        $isDevTarget = $user->isDeveloper();
 
         $this->validate([
             'name' => ['required', 'string', 'max:120'],
-            'email' => ['required', 'email', 'max:190', Rule::unique('users', 'email')->ignore($user->id)],
+            'email' => [$isDevTarget ? 'nullable' : 'nullable', 'email', 'max:190', Rule::unique('users', 'email')->ignore($user->id)],
             'mobile' => ['nullable', 'string', 'max:30'],
             'password' => ['nullable', 'string', 'min:6'],
             'role' => ['required', Rule::in(['super_admin', 'admin', 'manager', 'staff', 'cashier', 'accountant'])],
             'status' => ['required', Rule::in(['approved', 'pending', 'rejected'])],
+            'avatar' => ['nullable', 'image', 'max:3072'],
         ]);
 
-        if ($this->role === 'super_admin' && ! Auth::user()?->isSuperAdmin() && ! $user->isSuperAdmin()) {
-            $this->dispatch('toast', type: 'error', message: 'Only Super Admin can promote to Super Admin.');
+        if (! $isDevTarget && strtolower(trim($this->email)) === User::DEVELOPER_EMAIL) {
+            $this->dispatch('toast', type: 'error', message: 'This system email is reserved.');
 
             return;
         }
 
+        if ($this->avatar) {
+            $user->img_url = $uploads->store($this->avatar, 'user-profiles', $user->img_url);
+            $this->avatar = null;
+        }
+
         $user->name = trim($this->name);
-        $user->email = strtolower(trim($this->email));
         $user->mobile = trim($this->mobile);
-        $user->role = $this->role;
-        $user->status = $this->status;
-        $user->permissions = $this->normalizePermissions();
+
+        if ($isDevTarget) {
+            // Keep developer identity, super_admin role, and full access locked safely
+            $user->email = User::DEVELOPER_EMAIL;
+            $user->role = 'super_admin';
+            $user->status = 'approved';
+            $user->permissions = array_fill_keys(PermissionRegistry::allKeys(), true);
+        } else {
+            $cleanEmail = trim($this->email);
+            $user->email = $cleanEmail !== '' ? strtolower($cleanEmail) : null;
+            $user->role = $this->role;
+            $user->status = $this->status;
+            $user->permissions = $this->normalizePermissions();
+        }
+
         if (trim($this->password) !== '') {
             $user->password = Hash::make($this->password);
         }
         $user->save();
 
-        ActivityLogger::log('Update', 'Users & Roles', "Updated role/permissions for '{$user->name}' ({$user->role}, {$user->status}).", ['target_user_id' => $user->id]);
+        ActivityLogger::log('Update', 'Users & Roles', "Updated profile/permissions for '{$user->name}' ({$user->role}, {$user->status}).", ['target_user_id' => $user->id]);
         $this->showEditModal = false;
         $this->dispatch('toast', type: 'success', message: "User '{$user->name}' updated!");
     }
 
     public function deleteUser(int $id): void
     {
+        if (! Auth::user()?->isDeveloper()) {
+            abort(403);
+        }
+
         $target = User::findOrFail($id);
         $actor = Auth::user();
 
-        if ($target->id === $actor?->id) {
-            $this->dispatch('toast', type: 'error', message: 'You cannot delete your own active account.');
-
-            return;
-        }
-
-        if ($target->isAdmin() && ! $actor?->isSuperAdmin()) {
-            $this->dispatch('toast', type: 'error', message: 'Only Super Admin can delete an Admin account.');
+        if ($target->id === $actor?->id || $target->isDeveloper()) {
+            $this->dispatch('toast', type: 'error', message: 'This account cannot be deleted.');
 
             return;
         }

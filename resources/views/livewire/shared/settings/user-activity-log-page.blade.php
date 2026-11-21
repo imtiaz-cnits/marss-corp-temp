@@ -28,7 +28,6 @@
                 <div class="w-36"><x-ui.date-picker wire:model.live="dateTo" placeholder="To Date" /></div>
                 <button type="button" wire:click="clearFilters" class="h-[38px] px-3 rounded-xl border-[1.5px] border-slate-300 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">Reset</button>
             </div>
-            <x-ui.export-buttons table-id="activityLogTable" filename="marss-activity-log" title="MARSS User Activity Log" />
         </div>
 
         <div class="overflow-x-auto">

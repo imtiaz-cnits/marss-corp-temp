@@ -27,7 +27,6 @@
                     @foreach($categories as $c)<option value="{{ $c->id }}">{{ $c->category_name }}</option>@endforeach
                 </select>
             </div>
-            <x-ui.export-buttons table-id="retailProductsTable" filename="retail-products" title="MARSS Retail Products" />
         </div>
 
         <div class="hidden md:block overflow-x-auto">

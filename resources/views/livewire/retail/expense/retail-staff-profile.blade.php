@@ -17,7 +17,6 @@
                 <option value="">All Staff Members</option>
                 @foreach($staff as $s)<option value="{{ $s->id }}">{{ $s->name }} ({{ $s->role }})</option>@endforeach
             </select>
-            <x-ui.export-buttons table-id="staffSalaryTable" filename="staff-salary-profile" title="MARSS Staff Salary History" />
         </div>
         <div class="overflow-x-auto">
             <table id="staffSalaryTable" class="w-full text-xs sm:text-sm text-left">

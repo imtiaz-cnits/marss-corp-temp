@@ -200,12 +200,15 @@ class RetailPosTerminal extends Component
         if (! isset($this->cart[$index])) {
             return;
         }
-        if ($this->cart[$index]['quantity'] + 1 > $this->cart[$index]['stock']) {
-            $this->dispatch('toast', type: 'error', message: 'Cannot exceed available stock.');
+        $currentQty = max(0, (int) ($this->cart[$index]['quantity'] ?? 0));
+        $stock = (int) ($this->cart[$index]['stock'] ?? 0);
+        if ($currentQty + 1 > $stock) {
+            $name = (string) ($this->cart[$index]['product_name'] ?? 'Product');
+            $this->dispatch('toast', type: 'error', message: "Only {$stock} Pcs available in stock for '{$name}'.");
 
             return;
         }
-        $this->cart[$index]['quantity']++;
+        $this->cart[$index]['quantity'] = $currentQty + 1;
     }
 
     public function decrementQty(int $index): void
@@ -213,12 +216,14 @@ class RetailPosTerminal extends Component
         if (! isset($this->cart[$index])) {
             return;
         }
-        if ($this->cart[$index]['quantity'] <= 1) {
+        $currentQty = (int) ($this->cart[$index]['quantity'] ?? 1);
+        if ($currentQty <= 1) {
+            $this->cart[$index]['quantity'] = 1;
             $this->dispatch('toast', type: 'error', message: 'Quantity cannot be less than 1. Click trash icon to remove.');
 
             return;
         }
-        $this->cart[$index]['quantity']--;
+        $this->cart[$index]['quantity'] = $currentQty - 1;
     }
 
     public function removeItem(int $index): void

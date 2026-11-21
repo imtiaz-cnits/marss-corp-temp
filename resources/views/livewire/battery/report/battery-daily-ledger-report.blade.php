@@ -20,12 +20,13 @@
             <thead class="bg-[#15803d] text-white text-xs uppercase"><tr><th class="px-3 py-3">Date</th><th class="px-3 py-3">Type</th><th class="px-3 py-3">Ref</th><th class="px-3 py-3">Party</th><th class="px-3 py-3 text-right">Inflow</th><th class="px-3 py-3 text-right">Outflow</th><th class="px-3 py-3 text-right">Balance</th></tr></thead>
             <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
                 <tr class="bg-emerald-50/60 dark:bg-emerald-950/20 font-bold"><td class="px-3 py-2">{{ $startDate }}</td><td class="px-3 py-2" colspan="5">Opening Balance</td><td class="px-3 py-2 text-right">{{ Money::formatBd($ledger['opening_balance']) }}</td></tr>
-                @forelse($ledger['entries'] as $r)
+                @forelse($entries as $r)
                     <tr><td class="px-3 py-2">{{ $r['date'] }}</td><td class="px-3 py-2 font-semibold">{{ $r['type'] }}</td><td class="px-3 py-2 font-mono text-xs">{{ $r['reference'] }}</td><td class="px-3 py-2">{{ $r['party'] }}</td><td class="px-3 py-2 text-right text-emerald-700 font-bold">{{ (float) $r['inflow'] > 0 ? Money::formatBd($r['inflow']) : '—' }}</td><td class="px-3 py-2 text-right text-rose-600 font-bold">{{ (float) $r['outflow'] > 0 ? Money::formatBd($r['outflow']) : '—' }}</td><td class="px-3 py-2 text-right font-extrabold">{{ Money::formatBd($r['running_balance']) }}</td></tr>
                 @empty
                     <tr data-empty-row="true"><td colspan="7" class="px-4 py-8 text-center text-slate-500">No Battery ledger transactions in range.</td></tr>
                 @endforelse
             </tbody>
         </table>
+        <div class="p-3 border-t border-slate-200 dark:border-slate-800">{{ $entries->links() }}</div>
     </div>
 </div>

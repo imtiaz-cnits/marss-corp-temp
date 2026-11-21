@@ -117,7 +117,7 @@ class RetailExpenseList extends Component
         return view('livewire.retail.expense.retail-expense-list', [
             'expenses' => $query->paginate(20),
             'types' => RetailExpenseType::orderBy('type_name')->get(),
-            'staffMembers' => User::orderBy('name')->get(['id', 'name', 'role']),
+            'staffMembers' => User::visible()->orderBy('name')->get(['id', 'name', 'role']),
             'totalFiltered' => $totalFiltered,
         ]);
     }

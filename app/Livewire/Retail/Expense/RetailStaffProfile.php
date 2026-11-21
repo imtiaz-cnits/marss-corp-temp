@@ -15,7 +15,7 @@ class RetailStaffProfile extends Component
 
     public function render()
     {
-        $staff = User::orderBy('name')->get(['id', 'name', 'role', 'mobile', 'email']);
+        $staff = User::visible()->orderBy('name')->get(['id', 'name', 'role', 'mobile', 'email']);
         $expenses = RetailExpense::with(['staff', 'expenseType'])
             ->whereNotNull('staff_id')
             ->when($this->staffId !== '', fn ($q) => $q->where('staff_id', (int) $this->staffId))

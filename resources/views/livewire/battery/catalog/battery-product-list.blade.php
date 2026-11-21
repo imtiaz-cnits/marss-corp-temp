@@ -15,7 +15,6 @@
                 <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search battery name or code..." class="h-9 px-3 w-56 rounded-xl border-[1.5px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm">
                 <select wire:model.live="brandFilter" class="h-9 px-3 rounded-xl border-[1.5px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold"><option value="">All Brands</option>@foreach($brands as $b)<option value="{{ $b->id }}">{{ $b->name }}</option>@endforeach</select>
             </div>
-            <x-ui.export-buttons table-id="batteryProductsTable" filename="battery-products" title="MARSS Battery Products" />
         </div>
         <div class="overflow-x-auto">
             <table id="batteryProductsTable" data-export-skip-last="true" class="w-full text-xs sm:text-sm text-left">

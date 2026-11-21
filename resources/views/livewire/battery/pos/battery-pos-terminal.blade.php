@@ -16,6 +16,8 @@
     x-data="{
         scannerOpen: false,
         scanner: null,
+        scannerStatus: 'idle',
+        scannerMessage: '',
         custDropdownOpen: false,
         custSearch: '',
         holdModalOpen: false,
@@ -115,29 +117,85 @@
         },
         async openScanner() {
             this.scannerOpen = true;
+            this.scannerStatus = 'loading';
+            this.scannerMessage = 'Initializing camera...';
             await this.$nextTick();
-            if (!window.Html5Qrcode) return;
+            if (!window.Html5Qrcode) {
+                this.scannerStatus = 'unavailable';
+                this.scannerMessage = 'Barcode scanner library is not loaded.';
+                return;
+            }
+            if (this.scanner) {
+                try { if (this.scanner.isScanning) await this.scanner.stop(); } catch {}
+                try { this.scanner.clear(); } catch {}
+                this.scanner = null;
+            }
+            this.scanner = new window.Html5Qrcode('battery-qr-reader');
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                this.scannerStatus = 'unavailable';
+                this.scannerMessage = 'Camera API requires HTTPS or localhost. You can still scan a barcode image below.';
+                return;
+            }
+
             try {
-                this.scanner = new window.Html5Qrcode('battery-qr-reader');
+                const cameras = await window.Html5Qrcode.getCameras();
+                if (!cameras || cameras.length === 0) {
+                    this.scannerStatus = 'unavailable';
+                    this.scannerMessage = 'No camera device was detected on this PC/device. Connect a webcam or scan from a barcode image below.';
+                    return;
+                }
+                const backCam = cameras.find(c => /back|rear|environment/i.test(c.label || ''));
+                const cameraId = backCam ? backCam.id : cameras[0].id;
                 await this.scanner.start(
-                    { facingMode: 'environment' },
+                    cameraId,
                     { fps: 10, qrbox: { width: 230, height: 150 } },
                     (decoded) => {
                         window.marssPlayBeep?.();
                         $wire.scanBarcode(decoded);
                         this.closeScanner();
-                    }
+                    },
+                    () => {}
                 );
+                this.scannerStatus = 'active';
+                this.scannerMessage = '';
             } catch (err) {
-                window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Camera unavailable: ' + err } }));
-                this.scannerOpen = false;
+                const errStr = String(err || '');
+                this.scannerStatus = 'unavailable';
+                if (/NotFoundError|DevicesNotFoundError|Requested device not found/i.test(errStr)) {
+                    this.scannerMessage = 'No camera device found on this computer. Connect a camera or upload a barcode image below.';
+                } else if (/NotAllowedError|PermissionDeniedError/i.test(errStr)) {
+                    this.scannerMessage = 'Camera permission denied. Please allow camera access in browser settings or scan from an image below.';
+                } else {
+                    this.scannerMessage = 'Camera could not be started. You can still scan a barcode from an image file below.';
+                }
+            }
+        },
+        async scanBarcodeFile(event) {
+            const file = event.target?.files?.[0];
+            if (!file || !window.Html5Qrcode) return;
+            try {
+                if (!this.scanner) {
+                    this.scanner = new window.Html5Qrcode('battery-qr-reader');
+                }
+                const decoded = await this.scanner.scanFile(file, true);
+                window.marssPlayBeep?.();
+                $wire.scanBarcode(decoded);
+                this.closeScanner();
+            } catch {
+                window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'No readable barcode found in the selected image.' } }));
+            } finally {
+                if (event.target) event.target.value = '';
             }
         },
         async closeScanner() {
             if (this.scanner) {
-                try { await this.scanner.stop(); } catch {}
+                try { if (this.scanner.isScanning) await this.scanner.stop(); } catch {}
+                try { this.scanner.clear(); } catch {}
                 this.scanner = null;
             }
+            this.scannerStatus = 'idle';
+            this.scannerMessage = '';
             this.scannerOpen = false;
         }
     }"
@@ -328,9 +386,30 @@
                 </button>
             </div>
 
-            {{-- 4-Column Product Card Grid --}}
+            {{-- 4-Column Product Card Grid with Loading Skeleton --}}
             <div class="flex-1 min-h-0 overflow-y-auto pr-1 pos-product-scroll">
-                <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2 content-start pb-2">
+                {{-- Loading Skeleton Grid while Searching / Filtering Brands --}}
+                <div
+                    wire:loading.grid
+                    wire:target="search, selectBrand, loadMoreProducts"
+                    class="grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2 content-start pb-2"
+                >
+                    @for($sk = 0; $sk < 12; $sk++)
+                        <div class="bg-white dark:bg-slate-800 rounded-[12px] border-[1.5px] border-slate-200 dark:border-slate-700 p-2 px-2.5 min-h-[100px] flex flex-col justify-between">
+                            <div class="flex items-center justify-between gap-1">
+                                <div class="h-4 w-14 rounded-full marss-skeleton"></div>
+                                <div class="h-4 w-12 rounded-full marss-skeleton"></div>
+                            </div>
+                            <div class="space-y-1.5 my-1">
+                                <div class="h-3.5 w-full marss-skeleton"></div>
+                                <div class="h-3.5 w-2/3 marss-skeleton"></div>
+                            </div>
+                            <div class="h-3 w-16 marss-skeleton"></div>
+                        </div>
+                    @endfor
+                </div>
+
+                <div wire:loading.remove wire:target="search, selectBrand" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2 content-start pb-2">
                     @forelse($products as $p)
                         @php
                             $stock = (int) round((float) ($p->quantity ?? 0));
@@ -429,7 +508,7 @@
                                     type="text"
                                     x-model="custSearch"
                                     placeholder="Search customer..."
-                                    class="w-full h-[32px] px-2.5 mb-1 rounded-[6px] border border-slate-200 dark:border-slate-600 bg-[#f8fafc] dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-[#16a34a]"
+                                    class="w-full h-[32px] px-2.5 py-2 mb-1 rounded-[6px] border border-slate-200 dark:border-slate-600 bg-[#f8fafc] dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-[#16a34a]"
                                 >
                                 <div class="overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/50">
                                     @foreach($customers as $c)
@@ -495,16 +574,16 @@
             </div>
 
             {{-- Middle Scrollable Cart Table --}}
-            <div class="flex-1 min-h-[60px] overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[10px] mb-1 shadow-2xs">
-                <table class="w-full border-collapse table-fixed">
+            <div class="flex-1 min-h-[60px] overflow-y-auto overflow-x-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[10px] mb-1 shadow-2xs">
+                <table class="w-full border-collapse table-fixed min-w-[520px]">
                     <thead class="sticky top-0 z-10 bg-[#f8fafc] dark:bg-slate-900 border-b-2 border-slate-200 dark:border-slate-700">
                         <tr class="text-[11px] font-extrabold uppercase text-[#475569] dark:text-slate-300 tracking-wide">
-                            <th class="w-[26%] py-1.5 pl-3 pr-1.5 text-left">Product</th>
-                            <th class="w-[22%] py-1.5 px-1 text-center">Quantity</th>
+                            <th class="w-[23%] py-1.5 pl-2.5 pr-1 text-left">Product</th>
+                            <th class="w-[17%] py-1.5 px-1 text-center">Quantity</th>
                             <th class="w-[14%] py-1.5 px-1 text-center">Cost Price</th>
-                            <th class="w-[13%] py-1.5 px-1 text-center">Sell Price</th>
-                            <th class="w-[15%] py-1.5 px-1 text-center">Sub Total</th>
-                            <th class="w-[10%] py-1.5 px-1 text-center">Action</th>
+                            <th class="w-[17%] py-1.5 px-1 text-center">Sell Price</th>
+                            <th class="w-[20%] py-1.5 px-1 text-right">Sub Total</th>
+                            <th class="w-[9%] py-1.5 px-1 text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 text-xs">
@@ -513,25 +592,25 @@
                                 $rowTotal = (float) ($line['selling_price'] ?? 0) * (int) ($line['quantity'] ?? 1);
                             @endphp
                             <tr wire:key="bat-cart-row-{{ $line['product_id'] }}" class="hover:bg-[#f0fdf4] dark:hover:bg-slate-900/60 transition-colors">
-                                <td class="py-1.5 pl-3 pr-1.5 align-middle">
+                                <td class="py-1.5 pl-2.5 pr-1 align-middle">
                                     <span class="font-bold text-slate-800 dark:text-slate-100 text-[12px] leading-tight break-words">{{ $line['product_name'] }}</span>
                                 </td>
                                 <td class="py-1 px-1 align-middle text-center">
-                                    <div class="inline-flex items-center justify-between border-[1.5px] border-[#cbd5e1] dark:border-slate-600 rounded-[6px] bg-[#f8fafc] dark:bg-slate-900 p-0.5 w-[74px] h-[26px]">
-                                        <button type="button" wire:click="decrementQty({{ $idx }})" class="w-[21px] h-[21px] rounded-[4px] bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-extrabold text-xs flex items-center justify-center shadow-2xs cursor-pointer">-</button>
+                                    <div class="inline-flex items-center justify-between border-[1.5px] border-[#cbd5e1] dark:border-slate-600 rounded-[6px] bg-[#f8fafc] dark:bg-slate-900 p-0.5 w-[82px] h-[26px]">
+                                        <button type="button" wire:click="decrementQty({{ $idx }})" class="w-[21px] h-[21px] rounded-[4px] bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-extrabold text-xs flex items-center justify-center shadow-2xs cursor-pointer shrink-0">-</button>
                                         <input
                                             type="number"
                                             min="1"
                                             max="{{ $line['stock'] }}"
                                             wire:model.live="cart.{{ $idx }}.quantity"
-                                            class="w-[26px] bg-transparent border-0 text-center font-bold text-xs text-slate-900 dark:text-white p-0 outline-none"
+                                            class="pos-num-input w-[34px] bg-transparent border-0 text-center font-bold text-xs text-slate-900 dark:text-white p-0 outline-none tabular-nums"
                                         >
-                                        <button type="button" wire:click="incrementQty({{ $idx }})" class="w-[21px] h-[21px] rounded-[4px] bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-extrabold text-xs flex items-center justify-center shadow-2xs cursor-pointer">+</button>
+                                        <button type="button" wire:click="incrementQty({{ $idx }})" class="w-[21px] h-[21px] rounded-[4px] bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-extrabold text-xs flex items-center justify-center shadow-2xs cursor-pointer shrink-0">+</button>
                                     </div>
                                 </td>
                                 <td class="py-1 px-1 align-middle text-center" x-data="{ showCost: false }">
-                                    <div class="relative inline-flex items-center justify-center" @mouseenter="showCost = true" @mouseleave="showCost = false">
-                                        <span x-show="!showCost" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-600 text-[11px] font-semibold cursor-pointer">
+                                    <div class="relative inline-flex items-center justify-center w-full" @mouseenter="showCost = true" @mouseleave="showCost = false">
+                                        <span x-show="!showCost" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-600 text-[11px] font-semibold cursor-pointer whitespace-nowrap">
                                             🔒 ***
                                         </span>
                                         <input
@@ -540,7 +619,7 @@
                                             type="number"
                                             step="any"
                                             wire:model.live.debounce.300ms="cart.{{ $idx }}.cost_price"
-                                            class="w-[54px] h-[26px] rounded-[6px] border border-emerald-500 bg-white dark:bg-slate-900 text-center font-extrabold text-[11.5px] text-[#15803d] dark:text-emerald-400 outline-none px-1"
+                                            class="pos-num-input w-full max-w-[82px] h-[26px] rounded-[6px] border border-emerald-500 bg-white dark:bg-slate-900 text-center font-extrabold text-[11.5px] text-[#15803d] dark:text-emerald-400 outline-none px-1.5 tabular-nums"
                                         >
                                     </div>
                                 </td>
@@ -550,10 +629,10 @@
                                         step="any"
                                         min="0"
                                         wire:model.live.debounce.250ms="cart.{{ $idx }}.selling_price"
-                                        class="w-[54px] h-[26px] rounded-[6px] border-[1.5px] border-[#cbd5e1] dark:border-slate-600 bg-white dark:bg-slate-900 text-center font-bold text-[11.5px] text-[#15803d] dark:text-emerald-400 focus:border-[#15803d] outline-none px-1"
+                                        class="pos-num-input w-full max-w-[96px] h-[26px] rounded-[6px] border-[1.5px] border-[#cbd5e1] dark:border-slate-600 bg-white dark:bg-slate-900 text-center font-bold text-[11.5px] text-[#15803d] dark:text-emerald-400 focus:border-[#15803d] outline-none px-1.5 tabular-nums"
                                     >
                                 </td>
-                                <td class="py-1 px-1 align-middle text-center font-extrabold text-[12px] text-[#0f172a] dark:text-white tabular-nums">
+                                <td class="py-1 px-1.5 align-middle text-right font-extrabold text-[12px] text-[#0f172a] dark:text-white tabular-nums whitespace-nowrap">
                                     {{ number_format($rowTotal, 2) }}
                                 </td>
                                 <td class="py-1 px-1 align-middle text-center">
@@ -612,15 +691,15 @@
                     @endif
                 </div>
 
-                <div class="border-[1.5px] border-[#e2e8f0] dark:border-slate-700 rounded-[8px] px-2 py-1 bg-white dark:bg-slate-900 mb-1.5 space-y-0.5">
-                    <div class="flex items-center justify-between py-0.5">
-                        <span class="text-[9.5px] font-extrabold text-[#64748b] dark:text-slate-400 uppercase">SUB-TOTAL:</span>
-                        <span class="text-[11.5px] font-extrabold text-[#0284c7] dark:text-sky-400 tabular-nums">৳ {{ number_format((float) $subTotal, 2) }}</span>
+                <div class="border-[1.5px] border-[#e2e8f0] dark:border-slate-700 rounded-[8px] px-2.5 py-1 bg-white dark:bg-slate-900 mb-1.5 space-y-0.5">
+                    <div class="flex items-center justify-between gap-2 py-0.5">
+                        <span class="text-[9.5px] font-extrabold text-[#64748b] dark:text-slate-400 uppercase whitespace-nowrap">SUB-TOTAL:</span>
+                        <span class="text-[12px] font-extrabold text-[#0284c7] dark:text-sky-400 tabular-nums whitespace-nowrap">৳ {{ number_format((float) $subTotal, 2) }}</span>
                     </div>
 
-                    <div class="flex items-center justify-between py-0.5">
+                    <div class="flex items-center justify-between gap-2 py-0.5">
                         <div class="flex items-center gap-1">
-                            <span class="text-[9.5px] font-extrabold text-[#64748b] dark:text-slate-400 uppercase">DISCOUNT:</span>
+                            <span class="text-[9.5px] font-extrabold text-[#64748b] dark:text-slate-400 uppercase whitespace-nowrap">DISCOUNT:</span>
                             <div class="inline-flex h-[18px] rounded border border-[#cbd5e1] dark:border-slate-600 overflow-hidden">
                                 <button
                                     type="button"
@@ -634,7 +713,7 @@
                                 >%</button>
                             </div>
                             @if($discount_type === 'percent' && (float) $discountAmt > 0)
-                                <span class="px-1 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold">= ৳ {{ number_format((float) $discountAmt, 2) }}</span>
+                                <span class="px-1 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold whitespace-nowrap">= ৳ {{ number_format((float) $discountAmt, 2) }}</span>
                             @endif
                         </div>
                         <input
@@ -643,48 +722,48 @@
                             min="0"
                             wire:model.live.debounce.200ms="discount_value"
                             placeholder="0"
-                            class="w-[72px] h-[20px] rounded-[4px] border-[1.5px] border-[#cbd5e1] dark:border-slate-600 bg-white dark:bg-slate-800 text-center text-[10.5px] font-bold text-slate-800 dark:text-white outline-none focus:border-[#15803d]"
+                            class="pos-num-input w-[112px] h-[22px] px-2 rounded-[4px] border-[1.5px] border-[#cbd5e1] dark:border-slate-600 bg-white dark:bg-slate-800 text-right text-[11px] font-bold text-slate-800 dark:text-white tabular-nums outline-none focus:border-[#15803d]"
                         >
                     </div>
 
-                    <div class="flex items-center justify-between py-0.5">
-                        <span class="text-[9.5px] font-extrabold text-[#64748b] dark:text-slate-400 uppercase">DELIVERY CHARGE:</span>
+                    <div class="flex items-center justify-between gap-2 py-0.5">
+                        <span class="text-[9.5px] font-extrabold text-[#64748b] dark:text-slate-400 uppercase whitespace-nowrap">DELIVERY CHARGE:</span>
                         <input
                             type="number"
                             step="any"
                             min="0"
                             wire:model.live.debounce.200ms="delivery_charge"
                             placeholder="0"
-                            class="w-[72px] h-[20px] rounded-[4px] border-[1.5px] border-[#cbd5e1] dark:border-slate-600 bg-white dark:bg-slate-800 text-center text-[10.5px] font-bold text-slate-800 dark:text-white outline-none focus:border-[#15803d]"
+                            class="pos-num-input w-[112px] h-[22px] px-2 rounded-[4px] border-[1.5px] border-[#cbd5e1] dark:border-slate-600 bg-white dark:bg-slate-800 text-right text-[11px] font-bold text-slate-800 dark:text-white tabular-nums outline-none focus:border-[#15803d]"
                         >
                     </div>
 
-                    <div class="flex items-center justify-between py-0.5">
-                        <span class="text-[9.5px] font-extrabold text-[#64748b] dark:text-slate-400 uppercase">EXCHANGE AMOUNT:</span>
+                    <div class="flex items-center justify-between gap-2 py-0.5">
+                        <span class="text-[9.5px] font-extrabold text-[#64748b] dark:text-slate-400 uppercase whitespace-nowrap">EXCHANGE AMOUNT:</span>
                         <input
                             type="number"
                             step="any"
                             min="0"
                             wire:model.live.debounce.200ms="exchange_amount"
                             placeholder="0"
-                            class="w-[72px] h-[20px] rounded-[4px] border-[1.5px] border-[#cbd5e1] dark:border-slate-600 bg-white dark:bg-slate-800 text-center text-[10.5px] font-bold text-slate-800 dark:text-white outline-none focus:border-[#15803d]"
+                            class="pos-num-input w-[112px] h-[22px] px-2 rounded-[4px] border-[1.5px] border-[#cbd5e1] dark:border-slate-600 bg-white dark:bg-slate-800 text-right text-[11px] font-bold text-slate-800 dark:text-white tabular-nums outline-none focus:border-[#15803d]"
                         >
                     </div>
 
                     <div class="border-t border-slate-200 dark:border-slate-700 my-0.5"></div>
 
-                    <div class="flex items-center justify-between py-0.5">
-                        <span class="text-[10px] font-black text-[#0f172a] dark:text-white uppercase">NET PAYABLE:</span>
-                        <span class="text-[12.5px] font-black text-[#15803d] dark:text-emerald-400 tabular-nums">৳ {{ number_format((float) $netPayable, 2) }}</span>
+                    <div class="flex items-center justify-between gap-2 py-0.5">
+                        <span class="text-[10px] font-black text-[#0f172a] dark:text-white uppercase whitespace-nowrap">NET PAYABLE:</span>
+                        <span class="text-[12.5px] font-black text-[#15803d] dark:text-emerald-400 tabular-nums whitespace-nowrap">৳ {{ number_format((float) $netPayable, 2) }}</span>
                     </div>
 
-                    <div class="flex items-center justify-between py-0.5">
+                    <div class="flex items-center justify-between gap-2 py-0.5">
                         <div class="flex items-center gap-1">
-                            <span class="text-[9.5px] font-extrabold text-[#64748b] dark:text-slate-400 uppercase">PAID AMOUNT:</span>
+                            <span class="text-[9.5px] font-extrabold text-[#64748b] dark:text-slate-400 uppercase whitespace-nowrap">PAID AMOUNT:</span>
                             <button
                                 type="button"
                                 wire:click="payExact"
-                                class="h-[16px] px-1.5 rounded-[3px] bg-[#dcfce7] hover:bg-[#bbf7d0] text-[#15803d] text-[9px] font-bold leading-none cursor-pointer transition-colors"
+                                class="h-[16px] px-1.5 rounded-[3px] bg-[#dcfce7] hover:bg-[#bbf7d0] text-[#15803d] text-[9px] font-bold leading-none cursor-pointer transition-colors whitespace-nowrap"
                             >
                                 Full Paid
                             </button>
@@ -695,18 +774,18 @@
                             min="0"
                             wire:model.live.debounce.200ms="paid_amount"
                             placeholder="0"
-                            class="w-[72px] h-[20px] rounded-[4px] border-[1.5px] border-[#16a34a] bg-white dark:bg-slate-800 text-center text-[10.5px] font-bold text-[#15803d] dark:text-emerald-400 outline-none focus:ring-1 focus:ring-emerald-500"
+                            class="pos-num-input w-[112px] h-[22px] px-2 rounded-[4px] border-[1.5px] border-[#16a34a] bg-white dark:bg-slate-800 text-right text-[11px] font-bold text-[#15803d] dark:text-emerald-400 tabular-nums outline-none focus:ring-1 focus:ring-emerald-500"
                         >
                     </div>
 
-                    <div class="flex items-center justify-between py-0.5">
+                    <div class="flex items-center justify-between gap-2 py-0.5">
                         <div class="flex items-center gap-1">
-                            <span class="text-[10px] font-black text-[#15803d] dark:text-emerald-400 uppercase">CURRENT DUE:</span>
+                            <span class="text-[10px] font-black text-[#15803d] dark:text-emerald-400 uppercase whitespace-nowrap">CURRENT DUE:</span>
                             <span class="h-[15px] px-1 rounded-[3px] bg-[#dcfce7] dark:bg-emerald-950/60 text-[#15803d] dark:text-emerald-300 text-[8.5px] font-extrabold inline-flex items-center">
                                 {{ $paymentStatusLabel }}
                             </span>
                         </div>
-                        <span class="text-[12.5px] font-black text-[#15803d] dark:text-emerald-400 tabular-nums">৳ {{ number_format((float) $dueAmt, 2) }}</span>
+                        <span class="text-[12.5px] font-black text-[#15803d] dark:text-emerald-400 tabular-nums whitespace-nowrap">৳ {{ number_format((float) $dueAmt, 2) }}</span>
                     </div>
                 </div>
 
@@ -834,12 +913,35 @@
                 </button>
             </div>
             <div class="p-4 space-y-3">
-                <div class="p-2 rounded-lg bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 text-xs font-semibold text-center">
-                    Hold barcode in front of the camera to scan automatically.
+                <div x-show="scannerStatus === 'active' || scannerStatus === 'loading'" class="p-2 rounded-lg bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 text-xs font-semibold text-center">
+                    <span x-text="scannerStatus === 'loading' ? scannerMessage : 'Hold barcode in front of the camera to scan automatically.'"></span>
                 </div>
-                <div id="battery-qr-reader" class="w-full rounded-xl overflow-hidden bg-black min-h-[250px]"></div>
-                <div class="flex justify-end pt-1">
-                    <button type="button" @click="closeScanner()" class="h-[38px] px-5 rounded-xl bg-[#dc2626] text-white text-xs font-bold cursor-pointer">Close</button>
+                <div x-show="scannerStatus === 'unavailable'" style="display: none;" class="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs text-center space-y-2.5">
+                    <div class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-300 flex items-center justify-center mx-auto">
+                        <i class="fa-solid fa-video-slash text-base"></i>
+                    </div>
+                    <p class="font-bold m-0" x-text="scannerMessage"></p>
+                    <div class="flex flex-wrap items-center justify-center gap-2 pt-1">
+                        <label class="h-[34px] px-3.5 rounded-lg bg-[#15803d] hover:bg-[#166534] text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition-colors">
+                            <i class="fa-solid fa-image"></i>
+                            <span>Scan Barcode Image</span>
+                            <input type="file" accept="image/*" @change="scanBarcodeFile($event)" class="hidden">
+                        </label>
+                        <button type="button" @click="openScanner()" class="h-[34px] px-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer hover:border-[#15803d]">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            <span>Retry Camera</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="battery-qr-reader" x-show="scannerStatus !== 'unavailable'" class="w-full rounded-xl overflow-hidden bg-black min-h-[250px]"></div>
+                <div class="flex items-center justify-between pt-1">
+                    <label x-show="scannerStatus === 'active'" class="h-[36px] px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-image text-emerald-600"></i>
+                        <span>Scan Image</span>
+                        <input type="file" accept="image/*" @change="scanBarcodeFile($event)" class="hidden">
+                    </label>
+                    <span x-show="scannerStatus !== 'active'"></span>
+                    <button type="button" @click="closeScanner()" class="h-[38px] px-5 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] text-white text-xs font-bold cursor-pointer">Close</button>
                 </div>
             </div>
         </div>

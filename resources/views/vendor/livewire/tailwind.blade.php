@@ -49,32 +49,40 @@
                     </button>
                 @endif
 
-                {{-- Pagination Elements --}}
-                @foreach ($elements as $element)
-                    {{-- "Three Dots" Separator --}}
-                    @if (is_string($element))
-                        <span class="px-1 text-slate-400 font-bold">{{ $element }}</span>
-                    @endif
+                {{-- Compact 3-Button Smart Pagination (1, 2, 3 ... Last) --}}
+                @php
+                    $currentPage = $paginator->currentPage();
+                    $lastPage = $paginator->lastPage();
+                    $pageItems = [];
 
-                    {{-- Array Of Links --}}
-                    @if (is_array($element))
-                        @foreach ($element as $page => $url)
-                            @if ($page == $paginator->currentPage())
-                                <span wire:key="paginator-{{ $paginator->getPageName() }}-page-{{ $page }}" aria-current="page" class="custom-pagination-btn active">
-                                    {{ $page }}
-                                </span>
-                            @else
-                                <button
-                                    type="button"
-                                    wire:key="paginator-{{ $paginator->getPageName() }}-page-{{ $page }}"
-                                    wire:click="gotoPage({{ $page }}, '{{ $paginator->getPageName() }}')"
-                                    x-on:click="{{ $scrollIntoViewJsSnippet }}"
-                                    class="custom-pagination-btn"
-                                >
-                                    {{ $page }}
-                                </button>
-                            @endif
-                        @endforeach
+                    if ($lastPage <= 4) {
+                        $pageItems = range(1, $lastPage);
+                    } elseif ($currentPage <= 3) {
+                        $pageItems = [1, 2, 3, '...', $lastPage];
+                    } elseif ($currentPage >= $lastPage - 2) {
+                        $pageItems = [1, '...', $lastPage - 2, $lastPage - 1, $lastPage];
+                    } else {
+                        $pageItems = [1, '...', $currentPage - 1, $currentPage, $currentPage + 1, '...', $lastPage];
+                    }
+                @endphp
+
+                @foreach ($pageItems as $itemIdx => $item)
+                    @if ($item === '...')
+                        <span wire:key="paginator-{{ $paginator->getPageName() }}-dots-{{ $itemIdx }}" class="px-1.5 text-slate-400 font-bold select-none">...</span>
+                    @elseif ($item == $currentPage)
+                        <span wire:key="paginator-{{ $paginator->getPageName() }}-page-{{ $item }}" aria-current="page" class="custom-pagination-btn active">
+                            {{ $item }}
+                        </span>
+                    @else
+                        <button
+                            type="button"
+                            wire:key="paginator-{{ $paginator->getPageName() }}-page-{{ $item }}"
+                            wire:click="gotoPage({{ $item }}, '{{ $paginator->getPageName() }}')"
+                            x-on:click="{{ $scrollIntoViewJsSnippet }}"
+                            class="custom-pagination-btn"
+                        >
+                            {{ $item }}
+                        </button>
                     @endif
                 @endforeach
 

@@ -539,100 +539,119 @@
         </div>
     </div>
 
-    {{-- Row 8: Low Stock Alert & Recent Sales (Last 10 Invoices) Tables --}}
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
-        {{-- Low Stock Alert Table --}}
-        <div class="lg:col-span-5 bg-white dark:bg-[#0f172a] border border-[#f1f5f9] dark:border-[#1e293b] rounded-[14px] p-4 shadow-2xs flex flex-col">
-            <div class="flex items-center justify-between mb-3">
+    {{-- Row 8: Low Stock Alert & Recent Sales Invoices (50% / 50% Exact Reference Layout) --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {{-- Left (50%): Low Stock Alert --}}
+        <div class="bg-white dark:bg-[#0f172a] border border-[#f1f5f9] dark:border-[#1e293b] rounded-[14px] p-4 shadow-2xs flex flex-col">
+            <div class="flex items-center justify-between gap-2 mb-3">
                 <div class="flex items-center gap-2">
-                    <div class="w-[32px] h-[32px] rounded-[8px] bg-[#fee2e2] dark:bg-rose-950/60 text-[#dc2626] dark:text-rose-400 flex items-center justify-center">
-                        <i class="fa-solid fa-triangle-exclamation text-xs"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-[14px] font-bold text-[#1e293b] dark:text-white m-0">Low Stock Alert ({{ $f['low_stock_count'] }})</h6>
-                        <span class="text-[11px] text-[#64748b] dark:text-slate-400">Products running out of stock</span>
-                    </div>
+                    <i class="fa-solid fa-triangle-exclamation text-[#ef4444] text-sm"></i>
+                    <h6 class="text-[15px] font-bold text-[#1e293b] dark:text-white m-0">Low Stock Alert</h6>
                 </div>
-                <a href="{{ route('retail.reports.stock-out') }}" wire:navigate class="px-2.5 py-1 rounded-full bg-[#fff1f2] dark:bg-rose-950/60 text-[#e11d48] dark:text-rose-300 border border-[#fecaca] dark:border-rose-800 text-[11px] font-bold">
-                    View All
+                <a
+                    href="{{ route('retail.reports.stock-out') }}"
+                    wire:navigate
+                    class="px-3.5 py-1.5 rounded-full bg-white dark:bg-rose-950/40 hover:bg-[#fef2f2] dark:hover:bg-rose-950/70 text-[#dc2626] dark:text-rose-300 border border-[#f87171] dark:border-rose-700 text-[12px] font-semibold transition-colors whitespace-nowrap"
+                >
+                    View All Stock
                 </a>
             </div>
-            <div class="overflow-x-auto max-h-[310px]">
-                <table class="w-full text-xs text-left border-collapse">
-                    <thead class="sticky top-0 bg-[#f8fafc] dark:bg-slate-800 text-[#475569] dark:text-slate-300 text-[11px] font-bold uppercase">
+            <div class="overflow-x-auto max-h-[340px]">
+                <table class="w-full text-[13px] text-left border-collapse">
+                    <thead class="sticky top-0 z-10 bg-[#f8fafc] dark:bg-slate-800 text-[#475569] dark:text-slate-300 text-[12px] font-semibold border-b border-slate-100 dark:border-slate-700">
                         <tr>
-                            <th class="py-2 px-2.5">Product</th>
-                            <th class="py-2 px-2.5 text-center">Brand</th>
-                            <th class="py-2 px-2.5 text-right">Qty</th>
+                            <th class="py-2.5 px-3">Product Name</th>
+                            <th class="py-2.5 px-3 text-center">Code</th>
+                            <th class="py-2.5 px-3 text-center">Stock</th>
+                            <th class="py-2.5 px-3 text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                        @forelse($metrics['low_stock_products'] as $p)
-                            @php $q = (int) round((float) ($p->quantity ?? 0)); @endphp
-                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                <td class="py-2 px-2.5 font-semibold text-slate-800 dark:text-white">{{ $p->product_name }}</td>
-                                <td class="py-2 px-2.5 text-center text-slate-500">{{ $p->brand?->name ?? '—' }}</td>
-                                <td class="py-2 px-2.5 text-right">
-                                    <span class="px-2 py-0.5 rounded-full text-[11px] font-bold {{ $q <= 0 ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300' : 'bg-amber-100 text-amber-700' }}">
-                                        {{ $q }} Pcs
+                        @forelse($metrics['low_stock_products'] ?? [] as $p)
+                            @php
+                                $q = (int) round((float) ($p->quantity ?? 0));
+                                $pCode = $p->primaryCode();
+                            @endphp
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                <td class="py-2.5 px-3 font-bold text-[#1e293b] dark:text-white">{{ $p->product_name }}</td>
+                                <td class="py-2.5 px-3 text-center">
+                                    <span class="inline-block px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono text-[11px] font-semibold max-w-[140px] truncate" title="{{ $pCode ?: 'N/A' }}">
+                                        {{ $pCode ?: 'N/A' }}
                                     </span>
+                                </td>
+                                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                                    <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-bold text-white {{ $q <= 0 ? 'bg-[#ef4444]' : 'bg-[#f59e0b]' }}">
+                                        {{ $q }} pcs
+                                    </span>
+                                </td>
+                                <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                                    <a
+                                        href="{{ route('retail.purchases') }}"
+                                        wire:navigate
+                                        class="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-emerald-950/30 hover:bg-[#15803d] text-[#15803d] dark:text-emerald-300 hover:text-white border border-[#86efac] dark:border-emerald-700 text-[11.5px] font-bold transition-colors"
+                                    >
+                                        <i class="fa-solid fa-cart-plus text-[11px]"></i>
+                                        <span>Reorder</span>
+                                    </a>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="3" class="py-8 text-center text-slate-400">All products are sufficiently stocked.</td></tr>
+                            <tr data-empty-row="true"><td colspan="4" class="py-8 text-center text-slate-400">All products are sufficiently stocked.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
 
-        {{-- Recent Sales (Last 10 Invoices) Table --}}
-        <div class="lg:col-span-7 bg-white dark:bg-[#0f172a] border border-[#f1f5f9] dark:border-[#1e293b] rounded-[14px] p-4 shadow-2xs flex flex-col">
-            <div class="flex items-center justify-between mb-3">
+        {{-- Right (50%): Recent Sales Invoices --}}
+        <div class="bg-white dark:bg-[#0f172a] border border-[#f1f5f9] dark:border-[#1e293b] rounded-[14px] p-4 shadow-2xs flex flex-col">
+            <div class="flex items-center justify-between gap-2 mb-3">
                 <div class="flex items-center gap-2">
-                    <div class="w-[32px] h-[32px] rounded-[8px] bg-[#d1fae5] dark:bg-emerald-950/60 text-[#059669] dark:text-emerald-400 flex items-center justify-center">
-                        <i class="fa-solid fa-receipt text-xs"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-[14px] font-bold text-[#1e293b] dark:text-white m-0">Recent Sales (Last 10 Invoices)</h6>
-                        <span class="text-[11px] text-[#64748b] dark:text-slate-400">Latest customer transactions</span>
-                    </div>
+                    <i class="fa-solid fa-clock-rotate-left text-[#334155] dark:text-slate-300 text-sm"></i>
+                    <h6 class="text-[15px] font-bold text-[#1e293b] dark:text-white m-0">Recent Sales Invoices</h6>
                 </div>
-                <a href="{{ route('retail.invoices') }}" wire:navigate class="px-2.5 py-1 rounded-full bg-[#ecfdf5] dark:bg-emerald-950/60 text-[#059669] dark:text-emerald-300 border border-[#a7f3d0] dark:border-emerald-800 text-[11px] font-bold">
+                <a
+                    href="{{ route('retail.invoices') }}"
+                    wire:navigate
+                    class="px-3.5 py-1.5 rounded-full bg-white dark:bg-indigo-950/40 hover:bg-[#eef2ff] dark:hover:bg-indigo-950/70 text-[#4338ca] dark:text-indigo-300 border border-[#a5b4fc] dark:border-indigo-700 text-[12px] font-semibold transition-colors whitespace-nowrap"
+                >
                     All Invoices
                 </a>
             </div>
-            <div class="overflow-x-auto max-h-[310px]">
-                <table class="w-full text-xs text-left border-collapse">
-                    <thead class="sticky top-0 bg-[#f8fafc] dark:bg-slate-800 text-[#475569] dark:text-slate-300 text-[11px] font-bold uppercase">
+            <div class="overflow-x-auto max-h-[340px]">
+                <table class="w-full text-[13px] text-left border-collapse">
+                    <thead class="sticky top-0 z-10 bg-[#f8fafc] dark:bg-slate-800 text-[#475569] dark:text-slate-300 text-[12px] font-semibold border-b border-slate-100 dark:border-slate-700">
                         <tr>
-                            <th class="py-2 px-2.5">Invoice</th>
-                            <th class="py-2 px-2.5">Customer</th>
-                            <th class="py-2 px-2.5 text-right">Total</th>
-                            <th class="py-2 px-2.5 text-right">Paid</th>
-                            <th class="py-2 px-2.5 text-right">Due</th>
-                            <th class="py-2 px-2.5 text-center">Status</th>
+                            <th class="py-2.5 px-3">Invoice No</th>
+                            <th class="py-2.5 px-3">Customer</th>
+                            <th class="py-2.5 px-3 text-right">Amount</th>
+                            <th class="py-2.5 px-3 text-center">Status</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                        @forelse($metrics['recent_orders'] ?? [] as $ord)
-                            @php $isDue = (float) ($ord->due_amount ?? 0) > 0.009; @endphp
-                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                <td class="py-2 px-2.5 font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
+                        @forelse($metrics['recent_sales'] ?? [] as $ord)
+                            @php
+                                $ordDue = (float) ($ord->due_amount ?? 0);
+                                $ordPaid = (float) ($ord->paid_amount ?? 0);
+                                $statusText = $ordDue <= 0.009 ? 'Paid' : ($ordPaid > 0.009 ? 'Partial' : 'Due');
+                                $statusBadge = $statusText === 'Paid'
+                                    ? 'bg-[#22c55e] text-white'
+                                    : ($statusText === 'Partial' ? 'bg-[#eab308] text-[#1e293b]' : 'bg-[#ef4444] text-white');
+                            @endphp
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                <td class="py-2.5 px-3 font-bold text-[#16a34a] dark:text-emerald-400 whitespace-nowrap">
                                     <a href="{{ route('retail.invoice.show', $ord->id) }}" target="_blank" class="hover:underline">{{ $ord->order_no }}</a>
                                 </td>
-                                <td class="py-2 px-2.5 font-medium text-slate-800 dark:text-slate-200">{{ $ord->customer?->customer_name ?? 'Walk-in' }}</td>
-                                <td class="py-2 px-2.5 text-right font-semibold tabular-nums">{{ Money::formatBd($ord->sub_total) }}</td>
-                                <td class="py-2 px-2.5 text-right font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{{ Money::formatBd($ord->paid_amount) }}</td>
-                                <td class="py-2 px-2.5 text-right font-bold tabular-nums {{ $isDue ? 'text-rose-600' : 'text-slate-400' }}">{{ Money::formatBd($ord->due_amount) }}</td>
-                                <td class="py-2 px-2.5 text-center">
-                                    <span class="px-2 py-0.5 rounded-full text-[10.5px] font-bold {{ $isDue ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' }}">
-                                        {{ $isDue ? 'Due' : 'Paid' }}
+                                <td class="py-2.5 px-3 font-medium text-[#334155] dark:text-slate-200">{{ $ord->customer?->customer_name ?? 'Walk-in' }}</td>
+                                <td class="py-2.5 px-3 text-right font-extrabold text-[#1e293b] dark:text-white tabular-nums whitespace-nowrap">{{ Money::formatBd($ord->sub_total) }}</td>
+                                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                                    <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-bold {{ $statusBadge }}">
+                                        {{ $statusText }}
                                     </span>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="py-8 text-center text-slate-400">No recent invoices.</td></tr>
+                            <tr data-empty-row="true"><td colspan="4" class="py-8 text-center text-slate-400">No recent invoices.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

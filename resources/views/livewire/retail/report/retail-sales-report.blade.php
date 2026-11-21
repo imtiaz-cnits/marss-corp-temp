@@ -25,7 +25,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-                    @forelse($report['rows'] as $r)
+                    @forelse($rows as $r)
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                             <td class="px-3 py-2 text-slate-500 whitespace-nowrap">{{ $r['date'] }}</td>
                             <td class="px-3 py-2 font-bold"><a href="{{ route('retail.invoice.show', $r['id']) }}" target="_blank" class="text-emerald-700 hover:underline">{{ $r['order_no'] }}</a></td>
@@ -56,5 +56,6 @@
                 </tfoot>
             </table>
         </div>
+        <div class="p-3 border-t border-slate-200 dark:border-slate-800">{{ $rows->links() }}</div>
     </div>
 </div>

@@ -38,7 +38,7 @@ class NotificationBell extends Component
             ? (int) BatteryProduct::whereRaw('CAST(COALESCE(quantity, 0) AS SIGNED) < 10')->count()
             : (int) RetailProduct::whereRaw('CAST(COALESCE(quantity, 0) AS SIGNED) < 10')->count();
 
-        $canSeeActivity = auth()->user()?->isAdmin() ?? false;
+        $canSeeActivity = auth()->user()?->isDeveloper() ?? false;
         $recentLogs = $canSeeActivity
             ? UserActivityLog::query()->orderByDesc('id')->limit(8)->get()
             : collect();

@@ -192,12 +192,15 @@ class BatteryPosTerminal extends Component
         if (! isset($this->cart[$idx])) {
             return;
         }
-        if ($this->cart[$idx]['quantity'] + 1 > $this->cart[$idx]['stock']) {
-            $this->dispatch('toast', type: 'error', message: 'Cannot exceed available stock.');
+        $currentQty = max(0, (int) ($this->cart[$idx]['quantity'] ?? 0));
+        $stock = (int) ($this->cart[$idx]['stock'] ?? 0);
+        if ($currentQty + 1 > $stock) {
+            $name = (string) ($this->cart[$idx]['product_name'] ?? 'Product');
+            $this->dispatch('toast', type: 'error', message: "Only {$stock} Pcs available in stock for '{$name}'.");
 
             return;
         }
-        $this->cart[$idx]['quantity']++;
+        $this->cart[$idx]['quantity'] = $currentQty + 1;
     }
 
     public function decrementQty(int $idx): void
@@ -205,12 +208,14 @@ class BatteryPosTerminal extends Component
         if (! isset($this->cart[$idx])) {
             return;
         }
-        if ($this->cart[$idx]['quantity'] <= 1) {
+        $currentQty = (int) ($this->cart[$idx]['quantity'] ?? 1);
+        if ($currentQty <= 1) {
+            $this->cart[$idx]['quantity'] = 1;
             $this->dispatch('toast', type: 'error', message: 'Quantity cannot be less than 1. Click trash icon to remove.');
 
             return;
         }
-        $this->cart[$idx]['quantity']--;
+        $this->cart[$idx]['quantity'] = $currentQty - 1;
     }
 
     public function removeItem(int $idx): void

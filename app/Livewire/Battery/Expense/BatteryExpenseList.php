@@ -100,7 +100,7 @@ class BatteryExpenseList extends Component
         return view('livewire.battery.expense.battery-expense-list', [
             'expenses' => $query->paginate(20),
             'types' => BatteryExpenseType::orderBy('type_name')->get(),
-            'staffMembers' => User::orderBy('name')->get(['id', 'name']),
+            'staffMembers' => User::visible()->orderBy('name')->get(['id', 'name']),
             'totalFiltered' => Money::round((clone $query)->sum('expense_amount')),
         ]);
     }

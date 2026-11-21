@@ -15,7 +15,6 @@
                 <div class="w-32"><x-ui.date-picker wire:model.live="startDate" placeholder="From" /></div>
                 <div class="w-32"><x-ui.date-picker wire:model.live="endDate" placeholder="To" /></div>
             </div>
-            <x-ui.export-buttons table-id="batExpTable" filename="battery-expenses" title="MARSS Battery Expenses" />
         </div>
         <table id="batExpTable" data-export-skip-last="true" class="w-full text-xs sm:text-sm text-left">
             <thead class="bg-[#15803d] text-white text-xs uppercase"><tr><th class="px-3 py-3">Date</th><th class="px-3 py-3">Category</th><th class="px-3 py-3">Details</th><th class="px-3 py-3 text-right">Amount</th><th class="px-3 py-3 text-right">Actions</th></tr></thead>

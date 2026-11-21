@@ -18,7 +18,6 @@
     <div class="bg-white dark:bg-slate-900 rounded-2xl border-[1.5px] border-slate-300 dark:border-slate-700 overflow-hidden">
         <div class="p-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search battery..." class="h-9 px-3 w-64 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm">
-            <x-ui.export-buttons table-id="batteryStockTable" filename="battery-stock" title="MARSS Battery Stock Overview" />
         </div>
         <table id="batteryStockTable" data-export-skip-last="true" class="w-full text-xs sm:text-sm text-left">
             <thead class="bg-[#15803d] text-white text-xs uppercase"><tr><th class="px-3 py-3">Product</th><th class="px-3 py-3">Brand</th><th class="px-3 py-3 text-right">Cost</th><th class="px-3 py-3 text-center">Qty</th><th class="px-3 py-3 text-right">Adjust</th></tr></thead>

@@ -5,6 +5,8 @@ namespace App\Livewire\Battery\Invoice;
 use App\Models\Battery\BatteryCustomer;
 use App\Models\Battery\BatteryOrder;
 use App\Models\Battery\BatteryProduct;
+use App\Models\Battery\BatteryProductReturn;
+use App\Services\Battery\BatteryReturnService;
 use App\Services\Battery\BatterySalesService;
 use App\Support\DateFilter;
 use App\Support\Money;
@@ -21,13 +23,30 @@ class BatteryInvoiceList extends Component
 
     public string $search = '';
 
-    public string $statusFilter = '';
+    public string $quickFilter = 'all';
 
     public string $startDate = '';
 
     public string $endDate = '';
 
     public int $perPage = 15;
+
+    public bool $showViewModal = false;
+
+    public ?BatteryOrder $viewingOrder = null;
+
+    public bool $showReturnModal = false;
+
+    public ?int $returnOrderId = null;
+
+    public string $returnOrderNo = '';
+
+    public string $returnCustomerName = '';
+
+    public string $returnDate = '';
+
+    /** @var array<int, array{order_detail_id: int, product_name: string, sold_qty: int, returned_qty: int, available_qty: int, selling_price: string, quantity: int}> */
+    public array $returnItems = [];
 
     public bool $showPaymentModal = false;
 
@@ -70,6 +89,118 @@ class BatteryInvoiceList extends Component
     public string $editAddProductId = '';
 
     public array $editItems = [];
+
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedStartDate(): void
+    {
+        $this->quickFilter = ($this->startDate || $this->endDate) ? 'custom' : 'all';
+        $this->resetPage();
+    }
+
+    public function updatedEndDate(): void
+    {
+        $this->quickFilter = ($this->startDate || $this->endDate) ? 'custom' : 'all';
+        $this->resetPage();
+    }
+
+    public function setQuickFilter(string $filter): void
+    {
+        $this->quickFilter = $filter;
+        $today = Carbon::today();
+
+        if ($filter === 'today') {
+            $this->startDate = $today->toDateString();
+            $this->endDate = $today->toDateString();
+        } elseif ($filter === '7') {
+            $this->startDate = $today->copy()->subDays(6)->toDateString();
+            $this->endDate = $today->toDateString();
+        } elseif ($filter === '30') {
+            $this->startDate = $today->copy()->subDays(29)->toDateString();
+            $this->endDate = $today->toDateString();
+        } elseif ($filter === '365') {
+            $this->startDate = $today->copy()->subDays(364)->toDateString();
+            $this->endDate = $today->toDateString();
+        } else {
+            $this->quickFilter = 'all';
+            $this->startDate = '';
+            $this->endDate = '';
+        }
+
+        $this->resetPage();
+    }
+
+    public function openView(int $orderId): void
+    {
+        $this->viewingOrder = BatteryOrder::with(['customer', 'user', 'details.product', 'payments', 'productReturns'])->findOrFail($orderId);
+        $this->showViewModal = true;
+    }
+
+    public function openReturn(int $orderId): void
+    {
+        $order = BatteryOrder::with(['customer', 'details.product'])->findOrFail($orderId);
+        $this->returnOrderId = $order->id;
+        $this->returnOrderNo = (string) $order->order_no;
+        $this->returnCustomerName = (string) ($order->customer?->customer_name ?? 'Walk-in');
+        $this->returnDate = Carbon::today()->toDateString();
+
+        $this->returnItems = $order->details->map(function ($d) use ($order) {
+            $priorTableReturned = (int) BatteryProductReturn::where('order_id', $order->id)
+                ->where(function ($q) use ($d) {
+                    $q->where('order_detail_id', $d->id)
+                        ->orWhere(function ($q2) use ($d) {
+                            $q2->whereNull('order_detail_id')->where('product_id', $d->product_id);
+                        });
+                })
+                ->sum('quantity');
+
+            $returnedQty = max((int) ($d->return_quantity ?? 0), $priorTableReturned);
+            $soldQty = (int) round((float) $d->quantity);
+            $availableQty = max(0, $soldQty - $returnedQty);
+
+            return [
+                'order_detail_id' => $d->id,
+                'product_name' => (string) ($d->product?->product_name ?? "Product #{$d->product_id}"),
+                'sold_qty' => $soldQty,
+                'returned_qty' => $returnedQty,
+                'available_qty' => $availableQty,
+                'selling_price' => Money::round($d->selling_price ?? 0),
+                'quantity' => 0,
+            ];
+        })->values()->all();
+
+        $this->showReturnModal = true;
+    }
+
+    public function submitReturn(BatteryReturnService $returnService): void
+    {
+        try {
+            $items = collect($this->returnItems)
+                ->filter(fn ($row) => (int) ($row['quantity'] ?? 0) > 0)
+                ->map(fn ($row) => [
+                    'order_detail_id' => (int) $row['order_detail_id'],
+                    'quantity' => (int) $row['quantity'],
+                ])
+                ->values()
+                ->all();
+
+            $returnService->createSalesReturn(
+                (int) $this->returnOrderId,
+                $items,
+                $this->returnDate ?: Carbon::today()->toDateString(),
+                (int) Auth::id(),
+            );
+
+            $this->showReturnModal = false;
+            $this->returnItems = [];
+            $this->dispatch('toast', type: 'success', message: "Battery sales return processed for {$this->returnOrderNo}!");
+        } catch (\Throwable $e) {
+            $this->dispatch('toast', type: 'error', message: $e->getMessage());
+        }
+    }
 
     public function openPayment(int $orderId): void
     {
@@ -172,8 +303,17 @@ class BatteryInvoiceList extends Component
 
     public function closeModals(): void
     {
+        $this->showViewModal = false;
+        $this->showReturnModal = false;
         $this->showPaymentModal = false;
         $this->showEditModal = false;
+    }
+
+    public function resetFilters(): void
+    {
+        $this->reset(['search', 'startDate', 'endDate']);
+        $this->quickFilter = 'all';
+        $this->resetPage();
     }
 
     public function render()
@@ -181,12 +321,9 @@ class BatteryInvoiceList extends Component
         $query = BatteryOrder::with('customer')->orderByDesc('id');
         if (trim($this->search) !== '') {
             $t = '%'.trim($this->search).'%';
-            $query->where(fn ($q) => $q->where('order_no', 'like', $t)->orWhereHas('customer', fn ($cq) => $cq->where('customer_name', 'like', $t)));
-        }
-        if ($this->statusFilter === 'paid') {
-            $query->whereRaw('CAST(COALESCE(due_amount,0) AS DECIMAL(15,2)) <= 0');
-        } elseif ($this->statusFilter === 'due') {
-            $query->whereRaw('CAST(COALESCE(due_amount,0) AS DECIMAL(15,2)) > 0');
+            $query->where(fn ($q) => $q->where('order_no', 'like', $t)
+                ->orWhere('order_note', 'like', $t)
+                ->orWhereHas('customer', fn ($cq) => $cq->where('customer_name', 'like', $t)->orWhere('mobile', 'like', $t)));
         }
         if ($this->startDate || $this->endDate) {
             DateFilter::applyInvoiceDateFilter($query, 'invoice_date', $this->startDate ?: null, $this->endDate ?: null);

@@ -9,13 +9,11 @@
         <div class="flex flex-wrap items-center gap-2">
             <div class="w-36"><x-ui.date-picker wire:model.live="startDate" placeholder="From" /></div>
             <div class="w-36"><x-ui.date-picker wire:model.live="endDate" placeholder="To" /></div>
-            <button type="button" onclick="window.print()" class="h-[38px] px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer">
-                <i class="fa-solid fa-print"></i> Print Statement
-            </button>
+            <x-ui.export-buttons table-id="retailReceiptStmtTable" filename="retail-daily-receipt-payment" title="MARSS Retail Daily Receipt & Payment" />
         </div>
     </div>
 
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border-[1.5px] border-slate-300 dark:border-slate-700 p-5 sm:p-6 space-y-5">
+    <div class="print-sheet-page bg-white dark:bg-slate-900 rounded-2xl border-[1.5px] border-slate-300 dark:border-slate-700 p-4 sm:p-6 space-y-5">
         <div class="text-center border-b-2 border-emerald-700 pb-3">
             <h2 class="text-xl font-extrabold text-emerald-700 dark:text-emerald-400">MARSS CORPORATION — RETAIL SHOP</h2>
             <p class="text-xs font-semibold text-slate-500">Daily Receipt &amp; Payment Statement ({{ $startDate }} to {{ $endDate }})</p>
@@ -25,7 +23,7 @@
             {{-- Receipts Side --}}
             <div class="border border-slate-300 dark:border-slate-700 rounded-xl overflow-hidden">
                 <div class="px-4 py-2.5 bg-[#15803d] text-white font-bold text-sm">RECEIPTS (Cash Inflow)</div>
-                <table class="w-full text-xs sm:text-sm">
+                <table id="retailReceiptStmtTable" class="w-full text-xs sm:text-sm">
                     <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
                         <tr class="bg-emerald-50/60 dark:bg-emerald-950/20 font-bold">
                             <td class="px-4 py-2.5">Opening Cash Balance</td>
@@ -50,7 +48,7 @@
             {{-- Payments Side --}}
             <div class="border border-slate-300 dark:border-slate-700 rounded-xl overflow-hidden">
                 <div class="px-4 py-2.5 bg-rose-700 text-white font-bold text-sm">PAYMENTS (Cash Outflow)</div>
-                <table class="w-full text-xs sm:text-sm">
+                <table id="retailPaymentStmtTable" class="w-full text-xs sm:text-sm">
                     <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
                         @foreach($stmt['supplier_payments'] as $suppName => $amt)
                             <tr>
@@ -77,7 +75,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-3 gap-6 pt-10 text-center text-xs font-bold text-slate-600 dark:text-slate-300">
+        <div class="print-footer-bottom mt-auto grid grid-cols-3 gap-6 pt-10 text-center text-xs font-bold text-slate-600 dark:text-slate-300">
             <div class="border-t border-slate-400 pt-2">Cashier</div>
             <div class="border-t border-slate-400 pt-2">Accountant</div>
             <div class="border-t border-slate-400 pt-2">Authorized Signatory</div>

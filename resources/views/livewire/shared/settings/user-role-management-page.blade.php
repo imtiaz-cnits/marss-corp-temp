@@ -48,7 +48,6 @@
                     <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search name, email, role..." class="h-9 pl-8 pr-3 w-56 sm:w-72 rounded-xl border-[1.5px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm outline-none focus:border-emerald-700">
                 </div>
             </div>
-            <x-ui.export-buttons table-id="usersTable" filename="marss-users" title="MARSS Users & Roles" />
         </div>
 
         {{-- Desktop Table --}}
@@ -79,7 +78,9 @@
                                 <div class="text-xs text-slate-400">{{ $u->mobile ?: '—' }}</div>
                             </td>
                             <td class="px-4 py-3">
-                                <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">{{ $u->role }}</span>
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase whitespace-nowrap {{ $u->isDeveloper() || strtolower(trim((string) $u->role)) === 'super_admin' ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' }}">
+                                    {{ $u->isDeveloper() ? 'SUPER ADMIN' : str_replace('_', ' ', $u->role) }}
+                                </span>
                             </td>
                             <td class="px-4 py-3">
                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase {{ $u->isApproved() ? 'bg-green-100 text-green-700 dark:bg-green-950/60 dark:text-green-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300' }}">
@@ -90,7 +91,7 @@
                                 <button type="button" wire:click="openEditModal({{ $u->id }})" class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 text-xs font-bold cursor-pointer">
                                     <i class="fa-solid fa-sliders mr-1"></i> Edit / Perms
                                 </button>
-                                @if($u->id !== auth()->id())
+                                @if(! $u->isDeveloper() && $u->id !== auth()->id())
                                     <button type="button" wire:click="deleteUser({{ $u->id }})" wire:confirm="Delete user '{{ $u->name }}'?" class="ml-1 px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 hover:bg-red-100 text-xs font-bold cursor-pointer">
                                         <i class="fa-solid fa-trash"></i>
                                     </button>
@@ -116,13 +117,15 @@
                                 <p class="text-xs text-slate-500 truncate">{{ $u->email }}</p>
                             </div>
                         </div>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700">{{ $u->role }}</span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase whitespace-nowrap {{ $u->isDeveloper() || strtolower(trim((string) $u->role)) === 'super_admin' ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white' : 'bg-emerald-100 text-emerald-700' }}">
+                            {{ $u->isDeveloper() ? 'SUPER ADMIN' : str_replace('_', ' ', $u->role) }}
+                        </span>
                     </div>
                     <div class="flex items-center justify-between pt-1">
                         <span class="text-xs font-semibold {{ $u->isApproved() ? 'text-green-600' : 'text-amber-600' }}">{{ ucfirst($u->status ?: 'pending') }}</span>
                         <div class="flex gap-1.5">
                             <button type="button" wire:click="openEditModal({{ $u->id }})" class="px-3 py-1 rounded-lg bg-emerald-700 text-white text-xs font-bold">Edit</button>
-                            @if($u->id !== auth()->id())
+                            @if(! $u->isDeveloper() && $u->id !== auth()->id())
                                 <button type="button" wire:click="deleteUser({{ $u->id }})" wire:confirm="Delete user '{{ $u->name }}'?" class="px-2.5 py-1 rounded-lg bg-red-600 text-white text-xs font-bold"><i class="fa-solid fa-trash"></i></button>
                             @endif
                         </div>
@@ -137,6 +140,19 @@
     {{-- Create / Edit Modal with 33-Checkbox Granular Permission Matrix --}}
     <x-ui.modal :show="$showCreateModal || $showEditModal" max-width="lg" :title="$showCreateModal ? 'Create User & Assign Permissions' : 'Edit User & Granular Permissions'" close-method="closeModals">
         <form wire:submit="{{ $showCreateModal ? 'createUser' : 'updateUser' }}" class="space-y-4">
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                <img
+                    src="{{ $avatar ? $avatar->temporaryUrl() : ($currentAvatarUrl ?: asset('backend/assets/img/profile-img.png')) }}"
+                    alt="Avatar Preview"
+                    class="w-12 h-12 rounded-full object-cover border-2 border-emerald-600 shrink-0"
+                >
+                <div class="flex-1 min-w-0">
+                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Profile Image (Synced with User Profile)</label>
+                    <input type="file" wire:model="avatar" accept="image/*" class="w-full text-xs text-slate-600 dark:text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:text-emerald-700 file:font-bold hover:file:bg-emerald-100">
+                    @error('avatar') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Full Name *</label>
@@ -144,8 +160,8 @@
                     @error('name') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Email *</label>
-                    <input type="email" wire:model="email" class="w-full h-10 px-3 rounded-xl border-[1.5px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm">
+                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Email {{ $editingIsDeveloper ? '(Protected)' : ($showCreateModal ? '*' : '') }}</label>
+                    <input type="email" wire:model="email" @readonly($editingIsDeveloper) class="w-full h-10 px-3 rounded-xl border-[1.5px] {{ $editingIsDeveloper ? 'border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/60 text-slate-500' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800' }} text-sm">
                     @error('email') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
                 </div>
                 <div>

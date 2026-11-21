@@ -8,7 +8,6 @@
     <div class="bg-white dark:bg-slate-900 rounded-2xl border-[1.5px] border-slate-300 dark:border-slate-700 overflow-hidden">
         <div class="p-3.5 border-b border-slate-200 dark:border-slate-800 flex justify-between">
             <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search customer..." class="h-9 px-3 w-64 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm">
-            <x-ui.export-buttons table-id="batCustTable" filename="battery-customers" title="MARSS Battery Customers" />
         </div>
         <table id="batCustTable" data-export-skip-last="true" class="w-full text-xs sm:text-sm text-left">
             <thead class="bg-[#15803d] text-white text-xs uppercase"><tr><th class="px-3 py-3">ID</th><th class="px-3 py-3">Customer</th><th class="px-3 py-3">Mobile</th><th class="px-3 py-3 text-right">Prev Due</th><th class="px-3 py-3 text-right">Orders Due</th><th class="px-3 py-3 text-right">Actions</th></tr></thead>

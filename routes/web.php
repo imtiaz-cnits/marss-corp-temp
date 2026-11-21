@@ -31,14 +31,14 @@ Route::middleware('auth')->group(function () {
     // User Profile (accessible to all authenticated users)
     Route::get('/admin-dashboard-user-profile', UserProfilePage::class)->name('settings.profile');
 
-    // User & Role Management (permission-gated)
+    // User & Role Management (Developer ONLY)
     Route::get('/admin-dashboard-user-role', UserRoleManagementPage::class)
-        ->middleware('perm:user')
+        ->middleware('developer')
         ->name('settings.users');
 
-    // Activity Audit Log (Admin / Super Admin ONLY)
+    // Activity Audit Log (Developer ONLY)
     Route::get('/admin-dashboard-user-activity-log', UserActivityLogPage::class)
-        ->middleware('admin')
+        ->middleware('developer')
         ->name('settings.activity-log');
 
     // Geographic Masters (preserving exact legacy URL spellings)

@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\EnsureDeveloper;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'perm' => CheckPermission::class,
             'admin' => EnsureAdmin::class,
+            'developer' => EnsureDeveloper::class,
         ]);
 
         $middleware->redirectGuestsTo('/admin-login-page');
