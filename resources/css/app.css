@@ -897,6 +897,20 @@ table .marss-amount {
     box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.35) !important;
 }
 
+/* Universal Modal Scroll Lock & Zero-Gap Fixed Overlays */
+html:has([data-marss-modal="true"]:not([style*="display: none"])),
+body:has([data-marss-modal="true"]:not([style*="display: none"])) {
+    overflow: hidden !important;
+}
+.fixed.inset-0 {
+    margin: 0 !important;
+}
+[data-marss-modal="true"] {
+    margin: 0 !important;
+    inset: 0 !important;
+    overflow: hidden !important;
+}
+
 /* =========================================================
    7. FLATPICKR CALENDAR THEME (Emerald Header & Dark Mode)
    ========================================================= */

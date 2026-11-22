@@ -21,6 +21,8 @@
         "apexcharts": "^8.9.1",
         "flatpickr": "^4.6.13",
         "html5-qrcode": "^2.3.8",
-        "jsbarcode": "^3.12.3"
+        "jsbarcode": "^3.12.3",
+        "jspdf": "^4.2.1",
+        "jspdf-autotable": "^5.0.9"
     }
 }

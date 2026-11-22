@@ -127,104 +127,250 @@
             </div>
         </div>
 
-        {{-- 3. Desktop Table (Unified UI Border, Solid #15803d Header, Rounded Top Corners) --}}
+        {{-- 3. Desktop Table (Reference Parity: 8 Columns: SL | INVOICE NO | CUSTOMER INFO | FINANCIAL SUMMARY | CREATED BY | DATE | STATUS | ACTION) --}}
         <div class="table-responsive unified-ui-border hidden md:block w-full overflow-x-auto rounded-2xl shadow-2xs bg-white dark:bg-slate-900">
             <table id="retailInvoiceTable" data-export-skip-last="true" class="w-full text-xs sm:text-[13px] text-left border-collapse">
                 <thead>
                     <tr class="bg-[#15803d] text-white text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
-                        <th class="p-[10px] text-center w-[44px] rounded-tl-2xl">SL</th>
-                        <th class="p-[10px]">Invoice No</th>
-                        <th class="p-[10px]">Date</th>
-                        <th class="p-[10px]">Customer</th>
-                        <th class="p-[10px] text-right">SubTotal</th>
-                        <th class="p-[10px] text-right">Disc</th>
-                        <th class="p-[10px] text-right">Paid</th>
-                        <th class="p-[10px] text-right">Due</th>
-                        <th class="p-[10px] text-center">Status</th>
-                        <th class="p-[10px] text-center rounded-tr-2xl">Action</th>
+                        <th class="p-[10px] text-center w-[50px] rounded-tl-2xl whitespace-nowrap">SL</th>
+                        <th class="p-[10px] text-start w-[125px] whitespace-nowrap">Invoice No</th>
+                        <th class="p-[10px] text-start whitespace-nowrap">Customer Info</th>
+                        <th class="p-[10px] text-start whitespace-nowrap">Financial Summary</th>
+                        <th class="p-[10px] text-start w-[115px] whitespace-nowrap">Created By</th>
+                        <th class="p-[10px] text-start w-[115px] whitespace-nowrap">Date</th>
+                        <th class="p-[10px] text-center w-[110px] whitespace-nowrap">Status</th>
+                        <th class="p-[10px] text-center w-[160px] rounded-tr-2xl whitespace-nowrap">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-200">
                     @forelse($orders as $idx => $order)
-                        @php $isDue = (float) ($order->due_amount ?? 0) > 0.009; @endphp
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                            <td class="p-[10px] text-center font-bold text-slate-400">{{ ($orders->firstItem() ?? 1) + $idx }}</td>
-                            <td class="p-[10px] font-extrabold text-[#15803d] dark:text-emerald-400 whitespace-nowrap">{{ $order->order_no }}</td>
-                            <td class="p-[10px] whitespace-nowrap text-xs text-slate-500">{{ \Carbon\Carbon::parse($order->invoice_date ?? $order->created_at)->format('d-m-Y') }}</td>
+                        @php
+                            $subTotal = (float) ($order->sub_total ?? 0);
+                            $discountAmount = (float) ($order->discount_amount ?? 0);
+                            $paidAmount = (float) ($order->paid_amount ?? 0);
+                            $dueAmount = (float) ($order->due_amount ?? 0);
+                            $discountType = $order->discount_type ?? 'fixed';
+                            $discountRate = $order->discount_rate !== null ? (float) $order->discount_rate : null;
+                            $discountDisplay = Money::formatBd($discountAmount);
+                            if ($discountType === 'percent' && $discountRate !== null && $discountRate > 0) {
+                                $cleanRate = (int) $discountRate == $discountRate ? (int) $discountRate : rtrim(rtrim(number_format($discountRate, 2, '.', ''), '0'), '.');
+                                $discountDisplay = $cleanRate . '% (' . Money::formatBd($discountAmount, false) . '৳)';
+                            }
+
+                            if ($dueAmount <= 0.009 && $paidAmount > 0) {
+                                $paymentStatus = 'Fully Paid';
+                                $statusBadgeClass = 'status-badge-paid bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400';
+                            } elseif ($dueAmount > 0.009 && $paidAmount > 0) {
+                                $paymentStatus = 'Partial Paid';
+                                $statusBadgeClass = 'status-badge-partial bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400';
+                            } elseif ($dueAmount > 0.009 && $paidAmount <= 0.009) {
+                                $paymentStatus = 'Unpaid';
+                                $statusBadgeClass = 'status-badge-unpaid bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400';
+                            } else {
+                                $paymentStatus = 'Return';
+                                $statusBadgeClass = 'status-badge-return bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400';
+                            }
+                        @endphp
+                        <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors border-b border-slate-100 dark:border-slate-800">
+                            <td class="p-[10px] text-center font-bold text-slate-500 dark:text-slate-400">{{ ($orders->firstItem() ?? 1) + $idx }}</td>
+                            <td class="p-[10px] font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">{{ $order->order_no ?? '-' }}</td>
                             <td class="p-[10px]">
-                                <div class="font-bold text-slate-800 dark:text-white leading-tight">{{ $order->customer?->customer_name ?? 'Walk-in' }}</div>
-                                <div class="text-[11px] text-slate-400">{{ $order->customer?->mobile }}</div>
+                                @if($order->customer?->id)
+                                    <a href="{{ route('retail.customer.profile', $order->customer->id) }}" class="text-emerald-700 dark:text-emerald-400 font-bold hover:underline" title="View Customer Profile">
+                                        <div>{{ $order->customer->customer_name ?? 'Walk-in Customer' }}</div>
+                                    </a>
+                                @else
+                                    <div class="font-bold text-slate-800 dark:text-slate-100">{{ $order->customer?->customer_name ?? 'Walk-in Customer' }}</div>
+                                @endif
+                                <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                                    <i class="fa-solid fa-phone text-[10px]"></i>
+                                    <span>{{ $order->customer?->mobile ?? '-' }}</span>
+                                </div>
+                                @if($order->customer?->customer_id)
+                                    <a href="{{ route('retail.customer.profile', $order->customer->id) }}" class="inline-block mt-1">
+                                        <span class="customer-id-badge inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-bold text-[10px] bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                            ID: {{ $order->customer->customer_id }} <i class="fa-solid fa-arrow-up-right-from-square text-[8px]"></i>
+                                        </span>
+                                    </a>
+                                @endif
                             </td>
-                            <td class="p-[10px] text-right font-semibold tabular-nums whitespace-nowrap">{{ Money::formatBd($order->sub_total) }}</td>
-                            <td class="p-[10px] text-right text-slate-500 tabular-nums whitespace-nowrap">{{ Money::formatBd($order->discount_amount) }}</td>
-                            <td class="p-[10px] text-right font-bold text-[#15803d] dark:text-emerald-400 tabular-nums whitespace-nowrap">{{ Money::formatBd($order->paid_amount) }}</td>
-                            <td class="p-[10px] text-right font-bold tabular-nums whitespace-nowrap {{ $isDue ? 'text-rose-600' : 'text-slate-400' }}">{{ Money::formatBd($order->due_amount) }}</td>
+                            <td class="p-[10px] text-xs">
+                                <div class="text-slate-700 dark:text-slate-200 whitespace-nowrap">Total: <span class="font-bold text-slate-900 dark:text-white">{{ Money::formatBd($subTotal) }}</span></div>
+                                <div class="text-slate-500 dark:text-slate-400 whitespace-nowrap">Discount: {{ $discountDisplay }}</div>
+                                <div class="text-emerald-600 dark:text-emerald-400 font-medium whitespace-nowrap">Paid: <span class="font-bold">{{ Money::formatBd($paidAmount) }}</span></div>
+                                @if($dueAmount > 0.009)
+                                    <div class="text-rose-600 dark:text-rose-400 font-bold whitespace-nowrap">Due: {{ Money::formatBd($dueAmount) }}</div>
+                                @endif
+                            </td>
+                            <td class="p-[10px] text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                                <i class="fa-solid fa-user me-1 text-slate-400"></i>{{ $order->user?->name ?? 'System' }}
+                            </td>
+                            <td class="p-[10px] text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                <i class="fa-regular fa-calendar me-1 text-slate-400"></i>{{ $order->invoice_date ? \Carbon\Carbon::parse($order->invoice_date)->format('M d, Y') : ($order->created_at ? $order->created_at->format('M d, Y') : 'N/A') }}
+                            </td>
                             <td class="p-[10px] text-center">
-                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold {{ $isDue ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' }}">
-                                    {{ $isDue ? 'Due' : 'Paid' }}
+                                <span class="status-pill {{ $statusBadgeClass }}">
+                                    {{ $paymentStatus }}
                                 </span>
                             </td>
-                            <td class="p-[10px] text-center whitespace-nowrap">
-                                <div class="inline-flex items-center justify-center gap-1">
-                                    <button type="button" wire:click="openView({{ $order->id }})" title="Quick View" class="w-[30px] h-[30px] rounded-lg bg-[#f0f9ff] dark:bg-slate-800 text-[#0284c7] dark:text-sky-400 border border-[#cbd5e1] dark:border-slate-700 hover:bg-[#e0f2fe] hover:border-[#0284c7] dark:hover:bg-sky-900/60 inline-flex items-center justify-center text-xs transition-colors cursor-pointer"><i class="fa-regular fa-eye"></i></button>
-                                    <button type="button" wire:click="openReturn({{ $order->id }})" title="Sales Return" class="w-[30px] h-[30px] rounded-lg bg-[#fffbeb] dark:bg-amber-950/50 text-[#d97706] dark:text-amber-400 border border-amber-200 dark:border-amber-800 hover:bg-[#d97706] hover:text-white inline-flex items-center justify-center text-xs transition-colors cursor-pointer"><i class="fa-solid fa-rotate-left"></i></button>
-                                    @if($isDue)
-                                        <button type="button" wire:click="openPayment({{ $order->id }})" title="Collect Due" class="w-[30px] h-[30px] rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-600 hover:text-white inline-flex items-center justify-center text-xs transition-colors cursor-pointer"><i class="fa-solid fa-hand-holding-dollar"></i></button>
-                                    @endif
-                                    <button type="button" wire:click="openEdit({{ $order->id }})" title="Full Edit" class="w-[30px] h-[30px] rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-600 hover:text-white inline-flex items-center justify-center text-xs transition-colors cursor-pointer"><i class="fa-solid fa-pen-to-square"></i></button>
-                                    <a href="{{ route('retail.invoice.show', $order->id) }}" target="_blank" title="Print Bill" class="w-[30px] h-[30px] rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-[#15803d] hover:text-white inline-flex items-center justify-center text-xs transition-colors"><i class="fa-solid fa-print"></i></a>
+                            <td class="p-[10px] text-center">
+                                <div class="flex items-center justify-center gap-1.5">
+                                    <button type="button" wire:click="openView({{ $order->id }})" class="action-btn quick-view-btn w-[32px] h-[32px] rounded-lg flex items-center justify-center transition-all shadow-sm cursor-pointer" title="Quick View Invoice">
+                                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                    </button>
+                                    <a href="{{ route('retail.invoice.show', $order->id) }}" target="_blank" class="action-btn action-btn-print w-[32px] h-[32px] rounded-lg flex items-center justify-center transition-all shadow-sm" title="Print Invoice">
+                                        <i class="fa-solid fa-print text-xs"></i>
+                                    </a>
+                                    <button type="button" wire:click="openReturn({{ $order->id }})" class="action-btn action-btn-return w-[32px] h-[32px] rounded-lg flex items-center justify-center transition-all shadow-sm cursor-pointer" title="Sales Return">
+                                        <i class="fa-solid fa-rotate-left text-xs"></i>
+                                    </button>
+                                    <button type="button" wire:click="openPayment({{ $order->id }})" class="action-btn action-btn-due w-[32px] h-[32px] rounded-lg flex items-center justify-center transition-all shadow-sm cursor-pointer" title="Due Collection / Payment">
+                                        <i class="fa-solid fa-hand-holding-dollar text-xs"></i>
+                                    </button>
+                                    <button type="button" wire:click="openEdit({{ $order->id }})" class="action-btn action-btn-edit w-[32px] h-[32px] rounded-lg flex items-center justify-center transition-all shadow-sm cursor-pointer" title="Edit Invoice">
+                                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
                     @empty
-                        <tr data-empty-row="true"><td colspan="10" class="px-4 py-8 text-center text-rose-500 font-bold">❌ No Retail invoices found.</td></tr>
+                        <tr data-empty-row="true"><td colspan="8" class="px-4 py-8 text-center text-rose-500 font-bold">❌ No Retail invoices found.</td></tr>
                     @endforelse
                 </tbody>
-                <tfoot class="bg-slate-50/90 dark:bg-slate-800/70 text-slate-800 dark:text-slate-100 font-bold border-t-2 border-emerald-600/30 text-xs sm:text-[13px]">
-                    <tr>
-                        <td colspan="4" class="p-[10px] text-right font-bold text-slate-600 dark:text-slate-300">Page Total:</td>
-                        <td class="p-[10px] text-right font-extrabold tabular-nums whitespace-nowrap">{{ Money::formatBd($pageSubTotal) }}</td>
-                        <td class="p-[10px] text-right font-bold text-slate-500 tabular-nums whitespace-nowrap">{{ Money::formatBd($pageDiscTotal) }}</td>
-                        <td class="p-[10px] text-right font-extrabold text-[#15803d] dark:text-emerald-400 tabular-nums whitespace-nowrap">{{ Money::formatBd($pagePaidTotal) }}</td>
-                        <td class="p-[10px] text-right font-extrabold text-rose-600 tabular-nums whitespace-nowrap">{{ Money::formatBd($pageDueTotal) }}</td>
-                        <td colspan="2" class="p-[10px]"></td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
 
-        {{-- 4. Mobile Cards --}}
+        {{-- 4. Mobile Cards (Reference Parity: 2x2 Grid Side-by-Side Financial Box) --}}
         <div class="md:hidden space-y-3">
-            @foreach($orders as $order)
-                @php $isDue = (float) ($order->due_amount ?? 0) > 0.009; @endphp
+            @foreach($orders as $idx => $order)
+                @php
+                    $subTotal = (float) ($order->sub_total ?? 0);
+                    $discountAmount = (float) ($order->discount_amount ?? 0);
+                    $paidAmount = (float) ($order->paid_amount ?? 0);
+                    $dueAmount = (float) ($order->due_amount ?? 0);
+                    $discountType = $order->discount_type ?? 'fixed';
+                    $discountRate = $order->discount_rate !== null ? (float) $order->discount_rate : null;
+                    $discountDisplay = Money::formatBd($discountAmount);
+                    if ($discountType === 'percent' && $discountRate !== null && $discountRate > 0) {
+                        $cleanRate = (int) $discountRate == $discountRate ? (int) $discountRate : rtrim(rtrim(number_format($discountRate, 2, '.', ''), '0'), '.');
+                        $discountDisplay = $cleanRate . '% (' . Money::formatBd($discountAmount, false) . '৳)';
+                    }
+
+                    if ($dueAmount <= 0.009 && $paidAmount > 0) {
+                        $paymentStatus = 'Fully Paid';
+                        $statusBadgeClass = 'status-badge-paid bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400';
+                    } elseif ($dueAmount > 0.009 && $paidAmount > 0) {
+                        $paymentStatus = 'Partial Paid';
+                        $statusBadgeClass = 'status-badge-partial bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400';
+                    } elseif ($dueAmount > 0.009 && $paidAmount <= 0.009) {
+                        $paymentStatus = 'Unpaid';
+                        $statusBadgeClass = 'status-badge-unpaid bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400';
+                    } else {
+                        $paymentStatus = 'Return';
+                        $statusBadgeClass = 'status-badge-return bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400';
+                    }
+                @endphp
                 <div class="unified-ui-border rounded-2xl p-3.5 bg-white dark:bg-slate-800/80 shadow-2xs space-y-2">
-                    <div class="flex items-center justify-between">
-                        <span class="font-extrabold text-[#15803d] dark:text-emerald-400 text-sm">{{ $order->order_no }}</span>
-                        <span class="text-xs text-slate-500">{{ \Carbon\Carbon::parse($order->invoice_date ?? $order->created_at)->format('d-m-Y') }}</span>
+                    <div class="flex items-center justify-between pb-2 mb-1 border-b border-slate-100 dark:border-slate-700">
+                        <div class="flex items-center gap-1.5">
+                            <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs">#{{ ($orders->firstItem() ?? 1) + $idx }}</span>
+                            <span class="font-bold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1">
+                                <i class="fa-solid fa-file-invoice text-emerald-600"></i>{{ $order->order_no ?? '-' }}
+                            </span>
+                        </div>
+                        <div>
+                            <span class="status-pill {{ $statusBadgeClass }}">
+                                {{ $paymentStatus }}
+                            </span>
+                        </div>
                     </div>
-                    <p class="text-xs font-bold text-slate-800 dark:text-white">{{ $order->customer?->customer_name ?? 'Walk-in' }}</p>
-                    <div class="grid grid-cols-2 gap-1 text-xs">
-                        <span>Total: <strong>{{ Money::formatBd($order->sub_total) }}</strong></span>
-                        <span>Paid: <strong class="text-emerald-600">{{ Money::formatBd($order->paid_amount) }}</strong></span>
-                        <span>Due: <strong class="{{ $isDue ? 'text-rose-600' : 'text-slate-400' }}">{{ Money::formatBd($order->due_amount) }}</strong></span>
-                        <span>Status: <strong>{{ $isDue ? 'Due' : 'Paid' }}</strong></span>
-                    </div>
-                    <div class="flex flex-wrap gap-1.5 pt-1">
-                        <button type="button" wire:click="openView({{ $order->id }})" class="px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-slate-700 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-slate-600 text-xs font-bold cursor-pointer">View</button>
-                        <button type="button" wire:click="openReturn({{ $order->id }})" class="px-2.5 py-1 rounded-lg bg-amber-500 text-white text-xs font-bold cursor-pointer">Return</button>
-                        @if($isDue)
-                            <button type="button" wire:click="openPayment({{ $order->id }})" class="px-2.5 py-1 rounded-lg bg-blue-600 text-white text-xs font-bold cursor-pointer">Pay Due</button>
+
+                    <div>
+                        @if($order->customer?->id)
+                            <a href="{{ route('retail.customer.profile', $order->customer->id) }}" class="text-emerald-700 dark:text-emerald-400 font-bold text-sm hover:underline block mb-0.5" title="View Customer Profile">
+                                <i class="fa-solid fa-user-circle text-emerald-600 me-1"></i>{{ $order->customer->customer_name ?? 'Walk-in Customer' }}
+                            </a>
+                        @else
+                            <div class="font-bold text-slate-800 dark:text-slate-100 text-sm mb-0.5">
+                                <i class="fa-solid fa-user-circle text-emerald-600 me-1"></i>{{ $order->customer?->customer_name ?? 'Walk-in Customer' }}
+                            </div>
                         @endif
-                        <button type="button" wire:click="openEdit({{ $order->id }})" class="px-2.5 py-1 rounded-lg bg-purple-600 text-white text-xs font-bold cursor-pointer">Edit</button>
-                        <a href="{{ route('retail.invoice.show', $order->id) }}" target="_blank" class="px-2.5 py-1 rounded-lg bg-emerald-700 text-white text-xs font-bold">Print</a>
+                        <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs">
+                            <span><i class="fa-solid fa-phone me-1"></i>{{ $order->customer?->mobile ?? '-' }}</span>
+                            @if($order->customer?->customer_id)
+                                <a href="{{ route('retail.customer.profile', $order->customer->id) }}">
+                                    <span class="customer-id-badge px-1.5 py-0.5 rounded font-bold text-[10px] bg-slate-50 dark:bg-slate-800">ID: {{ $order->customer->customer_id }}</span>
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- 2x2 Grid Side-by-Side (Left-Right) with margin-top -->
+                    <div class="mobile-fin-grid">
+                        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700">
+                            <span class="text-slate-500 dark:text-slate-400 text-xs font-semibold">Total:</span>
+                            <span class="font-bold text-slate-800 dark:text-slate-100 text-xs whitespace-nowrap">{{ Money::formatBd($subTotal) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700">
+                            <span class="text-slate-500 dark:text-slate-400 text-xs font-semibold">Discount:</span>
+                            <span class="font-bold text-slate-600 dark:text-slate-300 text-xs whitespace-nowrap">{{ $discountDisplay }}</span>
+                        </div>
+                        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-slate-700">
+                            <span class="text-emerald-600 dark:text-emerald-400 text-xs font-semibold">Paid:</span>
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400 text-xs whitespace-nowrap">{{ Money::formatBd($paidAmount) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl {{ $dueAmount > 0.009 ? 'bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200 dark:border-slate-700' : 'bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700' }}">
+                            <span class="{{ $dueAmount > 0.009 ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-500 dark:text-slate-400' }} text-xs font-semibold">Due:</span>
+                            <span class="font-bold {{ $dueAmount > 0.009 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400' }} text-xs whitespace-nowrap">{{ Money::formatBd($dueAmount) }}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 mt-1 border-t border-slate-100 dark:border-slate-700">
+                        <div class="text-slate-500 dark:text-slate-400 text-xs">
+                            <i class="fa-regular fa-calendar me-1"></i>{{ $order->invoice_date ? \Carbon\Carbon::parse($order->invoice_date)->format('M d, Y') : ($order->created_at ? $order->created_at->format('M d, Y') : 'N/A') }}
+                            <span class="ms-1">({{ $order->user?->name ?? 'System' }})</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" wire:click="openView({{ $order->id }})" class="action-btn quick-view-btn w-[30px] h-[30px] rounded-lg flex items-center justify-center shadow-sm cursor-pointer" title="Quick View Invoice">
+                                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                            <a href="{{ route('retail.invoice.show', $order->id) }}" target="_blank" class="action-btn action-btn-print w-[30px] h-[30px] rounded-lg flex items-center justify-center shadow-sm" title="Print Invoice">
+                                <i class="fa-solid fa-print text-xs"></i>
+                            </a>
+                            <button type="button" wire:click="openReturn({{ $order->id }})" class="action-btn action-btn-return w-[30px] h-[30px] rounded-lg flex items-center justify-center shadow-sm cursor-pointer" title="Sales Return">
+                                <i class="fa-solid fa-rotate-left text-xs"></i>
+                            </button>
+                            <button type="button" wire:click="openPayment({{ $order->id }})" class="action-btn action-btn-due w-[30px] h-[30px] rounded-lg flex items-center justify-center shadow-sm cursor-pointer" title="Due Collection / Payment">
+                                <i class="fa-solid fa-hand-holding-dollar text-xs"></i>
+                            </button>
+                            <button type="button" wire:click="openEdit({{ $order->id }})" class="action-btn action-btn-edit w-[30px] h-[30px] rounded-lg flex items-center justify-center shadow-sm cursor-pointer" title="Edit Invoice">
+                                <i class="fa-solid fa-pen-to-square text-xs"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             @endforeach
         </div>
 
-        {{-- 5. Smart Pagination & Display Info Footer --}}
-        <div class="pt-4 mt-4 border-t border-slate-200 dark:border-slate-800">
-            {{ $orders->links() }}
+        {{-- 5. Modern Smart Pagination & Display Info Footer (Reference Parity) --}}
+        <div class="flex flex-col sm:flex-row items-center justify-between pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 gap-3">
+            <div class="display-info-badge px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 flex-wrap shadow-2xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>Showing</span>
+                <span class="stat-count px-1.5 py-0.5 rounded font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-700">{{ $orders->firstItem() ?? 0 }} – {{ $orders->lastItem() ?? 0 }}</span>
+                <span>of</span>
+                <span class="stat-total px-1.5 py-0.5 rounded font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-700">{{ $orders->total() }}</span>
+                <span>invoices</span>
+            </div>
+            <div class="w-full sm:w-auto">
+                {{ $orders->links() }}
+            </div>
         </div>
     </div>
 
@@ -570,14 +716,23 @@
                 </table>
             </div>
 
+            @php
+                $editSubTotal = collect($editItems)->sum(fn ($it) => (float) ($it['selling_price'] ?? 0) * (float) ($it['quantity'] ?? 0));
+                $editComputedDisc = $editDiscountType === 'percent' ? ($editSubTotal * (float) ($editDiscountValue ?: 0) / 100) : (float) ($editDiscountValue ?: 0);
+            @endphp
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                    <label class="block text-xs font-bold mb-1">Discount</label>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs font-bold">Discount</label>
+                        @if($editDiscountType === 'percent' && $editComputedDisc > 0)
+                            <span class="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">({{ Money::formatBd($editComputedDisc, false) }}৳)</span>
+                        @endif
+                    </div>
                     <div class="flex">
-                        <select wire:model="editDiscountType" class="no-custom-select h-10 px-2.5 rounded-l-xl border-[1.5px] border-r-0 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold">
+                        <select wire:model.live="editDiscountType" class="no-custom-select h-10 px-2.5 rounded-l-xl border-[1.5px] border-r-0 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold">
                             <option value="fixed">৳</option><option value="percent">%</option>
                         </select>
-                        <input type="number" step="0.01" min="0" wire:model="editDiscountValue" class="w-full h-10 px-3 rounded-r-xl border-[1.5px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm">
+                        <input type="number" step="0.01" min="0" wire:model.live.debounce.200ms="editDiscountValue" class="w-full h-10 px-3 rounded-r-xl border-[1.5px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm">
                     </div>
                 </div>
                 <div>
@@ -599,4 +754,81 @@
             </div>
         </form>
     </x-ui.modal>
+
+    <style>
+        .customer-id-badge {
+            border: 1.5px solid #cbd5e1 !important;
+        }
+        body[light-mode="dark"] .customer-id-badge,
+        html.dark .customer-id-badge {
+            border-color: #334155 !important;
+        }
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.25rem 0.65rem;
+            border-radius: 9999px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            line-height: 1;
+            text-align: center;
+            white-space: nowrap;
+            border: 1.5px solid #cbd5e1 !important;
+        }
+        body[light-mode="dark"] .status-pill,
+        html.dark .status-pill {
+            border-color: #334155 !important;
+        }
+        .action-btn {
+            border: 1.5px solid #cbd5e1 !important;
+            background-color: #f8fafc;
+        }
+        body[light-mode="dark"] .action-btn,
+        html.dark .action-btn {
+            border-color: #334155 !important;
+            background-color: #1e293b;
+        }
+        .action-btn-print { color: #15803d; }
+        .action-btn-print:hover { background-color: #dcfce7; border-color: #16a34a !important; color: #15803d; }
+        .action-btn-return { color: #d97706; }
+        .action-btn-return:hover { background-color: #fef3c7; border-color: #f59e0b !important; color: #d97706; }
+        .action-btn-due { color: #2563eb; }
+        .action-btn-due:hover { background-color: #dbeafe; border-color: #3b82f6 !important; color: #2563eb; }
+        .action-btn-edit { color: #7c3aed; }
+        .action-btn-edit:hover { background-color: #ede9fe; border-color: #8b5cf6 !important; color: #7c3aed; }
+
+        .quick-view-btn {
+            background-color: #f0f9ff !important;
+            border: 1.5px solid #cbd5e1 !important;
+            color: #0284c7 !important;
+            transition: all 0.15s ease-in-out !important;
+        }
+        .quick-view-btn svg {
+            stroke: #0284c7 !important;
+            color: #0284c7 !important;
+        }
+        .quick-view-btn:hover {
+            background-color: #e0f2fe !important;
+            border-color: #0284c7 !important;
+            color: #0284c7 !important;
+        }
+        body[light-mode="dark"] .quick-view-btn,
+        html.dark .quick-view-btn {
+            background-color: #0c4a6e !important;
+            border-color: #0369a1 !important;
+            color: #38bdf8 !important;
+        }
+        body[light-mode="dark"] .quick-view-btn svg,
+        html.dark .quick-view-btn svg {
+            stroke: #38bdf8 !important;
+            color: #38bdf8 !important;
+        }
+        .mobile-fin-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+            margin-top: 8px;
+        }
+    </style>
 </div>

@@ -10,36 +10,72 @@
     <link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@400;500;600;700;800&family=Valley+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
-        @page { size: A4 portrait; margin: 16px; }
+        @page {
+            size: A4 portrait;
+            margin: 10mm 15mm 10mm 15mm;
+        }
         .invoice-sheet {
-            padding: 16px;
             box-sizing: border-box;
+            width: 100%;
+            max-width: 8.27in;
+            min-height: 270mm;
+            margin: 0 auto;
+            padding: 24px;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            background: #fff;
+        }
+        .invoice-content {
+            flex: 1 0 auto;
         }
         .print-footer-bottom {
-            margin-top: auto;
+            margin-top: auto !important;
             break-inside: avoid;
             page-break-inside: avoid;
         }
         @media print {
-            html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+                height: 100% !important;
+            }
+            .no-print {
+                display: none !important;
+            }
             .invoice-sheet {
                 box-shadow: none !important;
                 border: none !important;
                 margin: 0 !important;
                 width: 100% !important;
                 max-width: 100% !important;
-                min-height: 0 !important;
-                padding: 16px 16px 110px 16px !important;
-                display: block !important;
+                min-height: 265mm !important;
+                height: 100% !important;
+                padding: 10px 16px 20px 16px !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
+            }
+            table {
+                page-break-inside: auto;
+            }
+            thead {
+                display: table-header-group !important;
+            }
+            tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            tbody {
+                page-break-inside: auto;
             }
             .print-footer-bottom {
-                position: fixed !important;
-                bottom: 16px !important;
-                left: 16px !important;
-                right: 16px !important;
-                background: #ffffff !important;
-                padding-top: 12px !important;
-                margin: 0 !important;
+                position: static !important;
+                margin-top: auto !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                padding-top: 24px !important;
             }
         }
     </style>

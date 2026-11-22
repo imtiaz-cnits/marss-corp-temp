@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <linearGradient id="custAvatarBg" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#dcfce7"/>
+      <stop offset="100%" stop-color="#a7f3d0"/>
+    </linearGradient>
+    <linearGradient id="custAvatarFg" x1="30" y1="24" x2="90" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#15803d"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="60" fill="url(#custAvatarBg)"/>
+  <circle cx="60" cy="44" r="20" fill="url(#custAvatarFg)"/>
+  <path d="M24 102c4-20 18-30 36-30s32 10 36 30" fill="url(#custAvatarFg)"/>
+</svg>

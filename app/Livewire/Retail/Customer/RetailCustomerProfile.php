@@ -76,7 +76,7 @@ class RetailCustomerProfile extends Component
         $balance = $service->customerBalance($customer->id);
         $orders = RetailOrder::where('customer_id', $customer->id)->orderByDesc('id')->get();
         $payments = RetailOrderPaymentDetail::with('order')->whereIn('order_id', $orders->pluck('id'))->orderByDesc('id')->get();
-        $returns = RetailProductReturn::with('product')->where('customer_id', $customer->id)->orderByDesc('id')->get();
+        $returns = RetailProductReturn::with(['product', 'order'])->where('customer_id', $customer->id)->orderByDesc('id')->get();
 
         return view('livewire.retail.customer.retail-customer-profile', compact('customer', 'balance', 'orders', 'payments', 'returns'));
     }

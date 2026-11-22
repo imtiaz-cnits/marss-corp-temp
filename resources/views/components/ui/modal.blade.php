@@ -19,9 +19,10 @@
 
 @if($show)
 <div
+    data-marss-modal="true"
     x-data
     x-on:keydown.escape.window="{{ $closeMethod ? '$wire.' . $closeMethod . '()' : '' }}"
-    class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto bg-slate-900/65 backdrop-blur-xs"
+    class="fixed inset-0 z-50 !m-0 flex items-center justify-center p-3 sm:p-4 overflow-hidden bg-slate-900/65 backdrop-blur-xs"
 >
     <div
         class="relative w-full {{ $widthClass }} my-auto bg-white dark:bg-slate-900 rounded-2xl border-[1.5px] border-slate-300 dark:border-slate-700 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"

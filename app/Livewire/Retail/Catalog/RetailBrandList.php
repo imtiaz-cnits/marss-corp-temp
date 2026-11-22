@@ -17,7 +17,17 @@ class RetailBrandList extends Component
 
     public string $search = '';
 
+    public string $statusFilter = '';
+
+    public int $perPage = 15;
+
     public bool $showModal = false;
+
+    public bool $showImageModal = false;
+
+    public ?string $viewingImageUrl = null;
+
+    public ?string $viewingImageTitle = null;
 
     public ?int $editingId = null;
 
@@ -34,10 +44,27 @@ class RetailBrandList extends Component
         $this->resetPage();
     }
 
+    public function updatingStatusFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingPerPage(): void
+    {
+        $this->resetPage();
+    }
+
+    public function setStatusFilter(string $status): void
+    {
+        $this->statusFilter = in_array($status, ['', 'active', 'inactive'], true) ? $status : '';
+        $this->resetPage();
+    }
+
     public function openCreate(): void
     {
         $this->reset(['editingId', 'name', 'logo', 'existingLogo']);
         $this->status = 'active';
+        $this->resetValidation();
         $this->showModal = true;
     }
 
@@ -46,10 +73,18 @@ class RetailBrandList extends Component
         $b = RetailBrand::findOrFail($id);
         $this->editingId = $b->id;
         $this->name = (string) $b->name;
-        $this->status = (string) ($b->status ?: 'active');
+        $this->status = strtolower((string) ($b->status ?: 'active'));
         $this->existingLogo = $b->logo;
         $this->logo = null;
+        $this->resetValidation();
         $this->showModal = true;
+    }
+
+    public function openImageModal(string $url, string $title = 'Brand Logo'): void
+    {
+        $this->viewingImageUrl = $url;
+        $this->viewingImageTitle = $title;
+        $this->showImageModal = true;
     }
 
     public function save(SafeImageUploadService $uploads): void
@@ -75,6 +110,30 @@ class RetailBrandList extends Component
         $this->dispatch('toast', type: 'success', message: 'Brand saved!');
     }
 
+    public bool $showDeleteModal = false;
+
+    public ?int $deletingId = null;
+
+    public string $deletingName = '';
+
+    public function confirmDelete(int $id): void
+    {
+        $b = RetailBrand::findOrFail($id);
+        $this->deletingId = $b->id;
+        $this->deletingName = (string) $b->name;
+        $this->showDeleteModal = true;
+    }
+
+    public function confirmDeleteAction(SafeImageUploadService $uploads): void
+    {
+        if ($this->deletingId) {
+            $this->delete($this->deletingId, $uploads);
+        }
+        $this->showDeleteModal = false;
+        $this->deletingId = null;
+        $this->deletingName = '';
+    }
+
     public function delete(int $id, SafeImageUploadService $uploads): void
     {
         $b = RetailBrand::findOrFail($id);
@@ -86,15 +145,21 @@ class RetailBrandList extends Component
     public function closeModal(): void
     {
         $this->showModal = false;
+        $this->showImageModal = false;
+        $this->showDeleteModal = false;
+        $this->viewingImageUrl = null;
+        $this->deletingId = null;
     }
 
     public function render()
     {
+        $query = RetailBrand::query()
+            ->when(trim($this->search) !== '', fn ($q) => $q->where('name', 'like', '%'.trim($this->search).'%'))
+            ->when($this->statusFilter !== '', fn ($q) => $q->whereRaw("LOWER(COALESCE(status, 'active')) = ?", [strtolower($this->statusFilter)]))
+            ->orderByDesc('id');
+
         return view('livewire.retail.catalog.retail-brand-list', [
-            'brands' => RetailBrand::query()
-                ->when($this->search !== '', fn ($q) => $q->where('name', 'like', '%'.trim($this->search).'%'))
-                ->orderByDesc('id')
-                ->paginate(15),
+            'brands' => $query->paginate($this->perPage),
         ]);
     }
 }

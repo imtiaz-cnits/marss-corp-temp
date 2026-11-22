@@ -77,7 +77,7 @@ class RetailPrintController extends Controller
         ]);
     }
 
-    public function purchase(int $id): View
+    public function purchase(int $id, RetailDueCollectionService $dueService): View
     {
         $purchase = RetailPurchase::with(['supplier', 'orderDetails.product', 'paymentDetails'])->findOrFail($id);
 
@@ -89,23 +89,35 @@ class RetailPrintController extends Controller
             'total' => Money::round($d->subtotal ?? Money::mul($d->cost_price ?? 0, $d->quantity ?? 0)),
         ])->all();
 
+        $bal = $purchase->supplier_id ? $dueService->supplierBalance((int) $purchase->supplier_id) : ['total_due' => '0.00'];
+        $dueAmt = Money::round($purchase->due_amount ?? 0);
+        $paidAmt = Money::round($purchase->paid_amount ?? 0);
+        $previousDue = Money::maxZero(Money::sub($bal['total_due'], $dueAmt));
+        $paymentStatus = Money::cmp($dueAmt, 0) <= 0 ? 'Fully Paid' : (Money::cmp($paidAmt, 0) > 0 ? 'Partial Paid' : 'Unpaid');
+
         return view('print.marss-purchase', [
-            'moduleLabel' => 'Retail Shop Purchase',
+            'title' => 'Purchase Details ' . $purchase->purchase_id,
+            'moduleLabel' => 'Retail & Wholesale Management System',
+            'tagline' => 'All Kinds of Dry & Gel Battery Supplier',
             'backUrl' => route('retail.purchases'),
             'docNo' => $purchase->purchase_id,
             'refNo' => (string) ($purchase->referance_no ?? ''),
             'date' => Carbon::parse($purchase->date ?? $purchase->created_at)->format('d-m-Y'),
-            'supplierName' => $purchase->supplier?->name ?? 'Supplier',
+            'supplierName' => $purchase->supplier?->name ?? 'N/A',
             'supplierCompany' => $purchase->supplier?->company ?? '',
-            'supplierMobile' => $purchase->supplier?->mobile ?? '',
-            'supplierAddress' => $purchase->supplier?->address ?? '',
+            'supplierMobile' => $purchase->supplier?->mobile ?? 'N/A',
+            'supplierAddress' => $purchase->supplier?->address ?? 'N/A',
             'lines' => $lines,
             'subTotal' => Money::round($purchase->grand_subtotal ?? 0),
             'discountAmount' => Money::round($purchase->discount_amount ?? 0),
+            'discountType' => $purchase->discount_type ?? 'fixed',
+            'discountRate' => $purchase->discount_rate,
             'deliveryCharge' => Money::round($purchase->delivery_charge ?? 0),
             'returnAdjustment' => Money::round($purchase->return_adjustment_amount ?? 0),
-            'paidAmount' => Money::round($purchase->paid_amount ?? 0),
-            'dueAmount' => Money::round($purchase->due_amount ?? 0),
+            'paidAmount' => $paidAmt,
+            'dueAmount' => $dueAmt,
+            'previousDue' => $previousDue,
+            'paymentStatus' => $paymentStatus,
         ]);
     }
 

@@ -23,7 +23,19 @@ class RetailSupplierList extends Component
 
     public bool $showModal = false;
 
+    public bool $showDeleteModal = false;
+
+    public bool $showImageModal = false;
+
     public ?int $editingId = null;
+
+    public ?int $deletingId = null;
+
+    public string $deletingName = '';
+
+    public string $viewingImageUrl = '';
+
+    public string $viewingImageTitle = '';
 
     public string $name = '';
 
@@ -35,9 +47,9 @@ class RetailSupplierList extends Component
 
     public string $address = '';
 
-    public string $purchase_payable_amount = '0';
+    public string $purchase_payable_amount = '';
 
-    public string $status = 'active';
+    public string $status = 'Active';
 
     public $image;
 
@@ -48,11 +60,15 @@ class RetailSupplierList extends Component
         $this->resetPage();
     }
 
+    public function updatingPerPage(): void
+    {
+        $this->resetPage();
+    }
+
     public function openCreate(): void
     {
-        $this->reset(['editingId', 'name', 'company', 'mobile', 'email', 'address', 'image', 'existingImage']);
-        $this->purchase_payable_amount = '0';
-        $this->status = 'active';
+        $this->reset(['editingId', 'name', 'company', 'mobile', 'email', 'address', 'purchase_payable_amount', 'image', 'existingImage']);
+        $this->status = 'Active';
         $this->resetValidation();
         $this->showModal = true;
     }
@@ -67,9 +83,11 @@ class RetailSupplierList extends Component
         $this->email = (string) ($s->email ?? '');
         $this->address = (string) ($s->address ?? '');
         $this->purchase_payable_amount = Money::round($s->purchase_payable_amount ?? 0);
-        $this->status = (string) ($s->status ?: 'active');
+        $rawStatus = strtolower(trim((string) ($s->status ?: 'Active')));
+        $this->status = $rawStatus === 'inactive' ? 'InActive' : 'Active';
         $this->existingImage = $s->img_url;
         $this->image = null;
+        $this->resetValidation();
         $this->showModal = true;
     }
 
@@ -77,14 +95,15 @@ class RetailSupplierList extends Component
     {
         $this->validate([
             'name' => ['required', 'string', 'max:150'],
-            'mobile' => ['nullable', 'string', 'max:30'],
+            'mobile' => ['required', 'string', 'max:30'],
+            'email' => ['nullable', 'email', 'max:150'],
             'purchase_payable_amount' => ['nullable', 'numeric', 'min:0'],
             'image' => ['nullable', 'image', 'max:2048'],
         ]);
 
         $path = $this->existingImage;
         if ($this->image) {
-            $path = $uploads->store($this->image, 'suppliers', $this->existingImage);
+            $path = $uploads->store($this->image, 'supplier-img', $this->existingImage);
         }
 
         $data = [
@@ -93,21 +112,41 @@ class RetailSupplierList extends Component
             'mobile' => trim($this->mobile),
             'email' => trim($this->email),
             'address' => trim($this->address),
-            'purchase_payable_amount' => Money::round($this->purchase_payable_amount ?: 0),
-            'status' => $this->status,
+            'purchase_payable_amount' => Money::round($this->purchase_payable_amount !== '' ? $this->purchase_payable_amount : 0),
+            'status' => $this->status ?: 'Active',
             'img_url' => $path,
             'user_id' => Auth::id(),
         ];
 
         if (! $this->editingId) {
-            $max = (int) (RetailSupplier::max('id') ?? 0);
-            $data['supplier_id'] = '#SupID'.str_pad((string) ($max + 1), 5, '0', STR_PAD_LEFT);
+            $last = RetailSupplier::latest('id')->first();
+            $nextNum = 10001;
+            if ($last && preg_match('/(\d+)$/', (string) $last->supplier_id, $m)) {
+                $nextNum = max(10001, ((int) $m[1]) + 1);
+            }
+            $data['supplier_id'] = 'SUP-'.$nextNum;
         }
 
         $supplier = RetailSupplier::updateOrCreate(['id' => $this->editingId], $data);
         ActivityLogger::log($this->editingId ? 'Update' : 'Create', 'Retail / Supplier', "Saved Retail supplier '{$supplier->name}'.");
         $this->showModal = false;
-        $this->dispatch('toast', type: 'success', message: "Supplier '{$supplier->name}' saved!");
+        $this->dispatch('toast', type: 'success', message: $this->editingId ? 'Supplier updated successfully!' : 'Supplier Created Successfully!');
+    }
+
+    public function confirmDelete(int $id): void
+    {
+        $s = RetailSupplier::findOrFail($id);
+        $this->deletingId = $s->id;
+        $this->deletingName = (string) $s->name;
+        $this->showDeleteModal = true;
+    }
+
+    public function confirmDeleteAction(): void
+    {
+        if ($this->deletingId) {
+            $this->delete($this->deletingId);
+        }
+        $this->closeModal();
     }
 
     public function delete(int $id): void
@@ -119,12 +158,26 @@ class RetailSupplierList extends Component
             return;
         }
         $s->delete();
-        $this->dispatch('toast', type: 'success', message: 'Supplier deleted.');
+        ActivityLogger::log('Delete', 'Retail / Supplier', "Deleted Retail supplier '{$s->name}'.");
+        $this->dispatch('toast', type: 'success', message: 'Supplier deleted successfully.');
+    }
+
+    public function openImageModal(string $url, string $title = ''): void
+    {
+        $this->viewingImageUrl = $url;
+        $this->viewingImageTitle = $title;
+        $this->showImageModal = true;
     }
 
     public function closeModal(): void
     {
         $this->showModal = false;
+        $this->showDeleteModal = false;
+        $this->showImageModal = false;
+        $this->deletingId = null;
+        $this->deletingName = '';
+        $this->viewingImageUrl = '';
+        $this->viewingImageTitle = '';
     }
 
     public function render()
@@ -132,11 +185,19 @@ class RetailSupplierList extends Component
         $query = RetailSupplier::withSum('purchases', 'due_amount')->orderByDesc('id');
         if (trim($this->search) !== '') {
             $term = '%'.trim($this->search).'%';
-            $query->where(fn ($q) => $q->where('name', 'like', $term)->orWhere('company', 'like', $term)->orWhere('mobile', 'like', $term)->orWhere('supplier_id', 'like', $term));
+            $query->where(fn ($q) => $q
+                ->where('name', 'like', $term)
+                ->orWhere('company', 'like', $term)
+                ->orWhere('mobile', 'like', $term)
+                ->orWhere('supplier_id', 'like', $term)
+                ->orWhere('status', 'like', $term));
         }
+
+        $totalPayable = Money::sum((clone $query)->pluck('purchase_payable_amount'));
 
         return view('livewire.retail.supplier.retail-supplier-list', [
             'suppliers' => $query->paginate($this->perPage),
+            'totalPayable' => $totalPayable,
         ]);
     }
 }

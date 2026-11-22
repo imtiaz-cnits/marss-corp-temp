@@ -318,12 +318,12 @@ class BatteryInvoiceList extends Component
 
     public function render()
     {
-        $query = BatteryOrder::with('customer')->orderByDesc('id');
+        $query = BatteryOrder::with(['customer', 'user', 'payments'])->orderByDesc('id');
         if (trim($this->search) !== '') {
             $t = '%'.trim($this->search).'%';
             $query->where(fn ($q) => $q->where('order_no', 'like', $t)
                 ->orWhere('order_note', 'like', $t)
-                ->orWhereHas('customer', fn ($cq) => $cq->where('customer_name', 'like', $t)->orWhere('mobile', 'like', $t)));
+                ->orWhereHas('customer', fn ($cq) => $cq->where('customer_name', 'like', $t)->orWhere('mobile', 'like', $t)->orWhere('customer_id', 'like', $t)));
         }
         if ($this->startDate || $this->endDate) {
             DateFilter::applyInvoiceDateFilter($query, 'invoice_date', $this->startDate ?: null, $this->endDate ?: null);

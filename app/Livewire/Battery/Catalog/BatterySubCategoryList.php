@@ -18,6 +18,12 @@ class BatterySubCategoryList extends Component
 
     public bool $showModal = false;
 
+    public bool $showDeleteModal = false;
+
+    public ?int $deletingId = null;
+
+    public string $deletingName = '';
+
     public ?int $editingId = null;
 
     public string $name = '';
@@ -51,6 +57,22 @@ class BatterySubCategoryList extends Component
         $this->dispatch('toast', type: 'success', message: 'Battery sub-category saved!');
     }
 
+    public function confirmDelete(int $id): void
+    {
+        $sc = BatterySubCategory::findOrFail($id);
+        $this->deletingId = $sc->id;
+        $this->deletingName = (string) $sc->name;
+        $this->showDeleteModal = true;
+    }
+
+    public function confirmDeleteAction(): void
+    {
+        if ($this->deletingId) {
+            $this->delete($this->deletingId);
+        }
+        $this->closeModal();
+    }
+
     public function delete(int $id): void
     {
         BatterySubCategory::findOrFail($id)->delete();
@@ -60,6 +82,9 @@ class BatterySubCategoryList extends Component
     public function closeModal(): void
     {
         $this->showModal = false;
+        $this->showDeleteModal = false;
+        $this->deletingId = null;
+        $this->deletingName = '';
     }
 
     public function render()

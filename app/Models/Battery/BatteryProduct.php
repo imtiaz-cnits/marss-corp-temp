@@ -41,25 +41,36 @@ class BatteryProduct extends Model
     public function decodedCodes(): array
     {
         $raw = $this->product_code;
+        $list = [];
 
         if (is_array($raw)) {
-            return array_values(array_filter(array_map('strval', $raw)));
+            $list = $raw;
+        } elseif (is_string($raw)) {
+            $trimmed = trim($raw);
+            if ($trimmed !== '') {
+                $decoded = json_decode($trimmed, true);
+                if (is_string($decoded)) {
+                    $decoded = json_decode($decoded, true);
+                }
+                if (is_array($decoded)) {
+                    $list = $decoded;
+                } else {
+                    $list = [$trimmed];
+                }
+            }
         }
 
-        if (is_string($raw)) {
-            $decoded = json_decode($raw, true);
-            if (is_string($decoded)) {
-                $decoded = json_decode($decoded, true);
+        $clean = [];
+        foreach ($list as $item) {
+            $s = trim((string) $item);
+            $s = trim($s, " \t\n\r\0\x0B\"'[]");
+            if ($s === '' || in_array(strtolower($s), ['null', 'undefined', '[]', '{}'], true)) {
+                continue;
             }
-            if (is_array($decoded)) {
-                return array_values(array_filter(array_map('strval', $decoded)));
-            }
-            if (trim($raw) !== '') {
-                return [trim($raw)];
-            }
+            $clean[] = $s;
         }
 
-        return [];
+        return array_values(array_unique($clean));
     }
 
     public function primaryCode(): string

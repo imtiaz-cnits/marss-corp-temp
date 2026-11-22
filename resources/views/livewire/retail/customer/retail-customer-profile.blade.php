@@ -3,8 +3,7 @@
 <div class="space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-            <a href="{{ route('retail.customers') }}" wire:navigate class="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline">&larr; Back to Customers</a>
-            <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight mt-0.5">{{ $customer->customer_name }} <span class="text-sm font-mono text-slate-400">{{ $customer->customer_id }}</span></h1>
+            <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">{{ $customer->customer_name }} <span class="text-sm font-mono text-slate-400">{{ $customer->customer_id }}</span></h1>
             <p class="text-xs text-slate-500">{{ $customer->mobile }} • {{ $customer->address_details }}</p>
         </div>
         @if((float) $balance['total_due'] > 0)
@@ -27,7 +26,7 @@
         <div class="overflow-x-auto">
             <table class="w-full text-xs sm:text-sm text-left">
                 <thead class="bg-[#15803d] text-white text-xs uppercase whitespace-nowrap">
-                    <tr><th class="px-3 py-2.5">Invoice #</th><th class="px-3 py-2.5">Date</th><th class="px-3 py-2.5 text-right">SubTotal</th><th class="px-3 py-2.5 text-right">Paid</th><th class="px-3 py-2.5 text-right">Due</th><th class="px-3 py-2.5 text-right">Print</th></tr>
+                    <tr><th class="px-3 py-2.5">Invoice #</th><th class="px-3 py-2.5">Date</th><th class="px-3 py-2.5 text-right">SubTotal</th><th class="px-3 py-2.5 text-right">Paid</th><th class="px-3 py-2.5 text-right">Due</th><th class="px-3 py-2.5 text-center">Print</th></tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
                     @forelse($orders as $o)
@@ -37,7 +36,11 @@
                             <td class="px-3 py-2 text-right tabular-nums">{{ Money::formatBd($o->sub_total) }}</td>
                             <td class="px-3 py-2 text-right font-bold text-emerald-700 tabular-nums">{{ Money::formatBd($o->paid_amount) }}</td>
                             <td class="px-3 py-2 text-right font-bold text-rose-600 tabular-nums">{{ Money::formatBd($o->due_amount) }}</td>
-                            <td class="px-3 py-2 text-right"><a href="{{ route('retail.invoice.show', $o->id) }}" target="_blank" class="text-emerald-700 font-bold hover:underline">Print</a></td>
+                            <td class="px-3 py-2 text-center">
+                                <a href="{{ route('retail.invoice.show', $o->id) }}" target="_blank" class="w-[30px] h-[30px] rounded-lg bg-emerald-50 hover:bg-[#15803d] text-[#15803d] hover:text-white border border-emerald-200 dark:bg-emerald-950/50 dark:border-emerald-800 dark:text-emerald-400 inline-flex items-center justify-center transition-all shadow-2xs" title="Print Invoice">
+                                    <i class="fa-solid fa-print text-xs"></i>
+                                </a>
+                            </td>
                         </tr>
                     @empty
                         <tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">No invoices yet.</td></tr>
@@ -67,12 +70,36 @@
             <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 font-extrabold text-sm">Sales Returns ({{ $returns->count() }})</div>
             <div class="overflow-x-auto">
                 <table class="w-full text-xs text-left">
-                    <thead class="bg-[#15803d] text-white uppercase"><tr><th class="px-3 py-2">Return #</th><th class="px-3 py-2">Product</th><th class="px-3 py-2 text-center">Qty</th><th class="px-3 py-2 text-right">Amount</th></tr></thead>
+                    <thead class="bg-[#15803d] text-white uppercase">
+                        <tr>
+                            <th class="px-3 py-2">DATE</th>
+                            <th class="px-3 py-2">INVOICE REF</th>
+                            <th class="px-3 py-2">PRODUCT</th>
+                            <th class="px-3 py-2 text-center">QTY</th>
+                            <th class="px-3 py-2 text-right">AMOUNT</th>
+                        </tr>
+                    </thead>
                     <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
                         @forelse($returns as $ret)
-                            <tr><td class="px-3 py-2 font-bold">{{ $ret->return_number }}</td><td class="px-3 py-2">{{ $ret->product?->product_name }}</td><td class="px-3 py-2 text-center">{{ $ret->quantity }}</td><td class="px-3 py-2 text-right font-bold">{{ Money::formatBd($ret->amount) }}</td></tr>
+                            <tr>
+                                <td class="px-3 py-2 whitespace-nowrap text-slate-600 dark:text-slate-400 font-medium">
+                                    {{ \Carbon\Carbon::parse($ret->date ?? $ret->created_at)->format('Y-m-d') }}
+                                </td>
+                                <td class="px-3 py-2 font-bold whitespace-nowrap">
+                                    @if($ret->order_id)
+                                        <a href="{{ route('retail.invoice.show', $ret->order_id) }}" target="_blank" class="text-emerald-700 dark:text-emerald-400 hover:underline">
+                                            {{ str_starts_with((string)($ret->order?->order_no ?? ''), '#') ? $ret->order->order_no : '#'.($ret->order?->order_no ?? ('InvID'.$ret->order_id)) }}
+                                        </a>
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                                <td class="px-3 py-2 text-slate-800 dark:text-slate-200">{{ $ret->product?->product_name ?? '-' }}</td>
+                                <td class="px-3 py-2 text-center font-bold text-slate-700 dark:text-slate-300">{{ (int)$ret->quantity }}</td>
+                                <td class="px-3 py-2 text-right font-black text-rose-600 dark:text-rose-400 tabular-nums">{{ Money::formatBd($ret->amount) }}</td>
+                            </tr>
                         @empty
-                            <tr><td colspan="4" class="px-4 py-6 text-center text-slate-500">No returns.</td></tr>
+                            <tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">No returns.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

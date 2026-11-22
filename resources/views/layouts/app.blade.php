@@ -172,6 +172,37 @@
                 <i class="fa-solid fa-bars-staggered text-[15px]"></i>
             </button>
 
+            {{-- Dynamic Topbar Back Button (Shown on Profile, Purchase Details, Invoice & Return Detail Pages) --}}
+            @php
+                $topbarBackFallback = match (true) {
+                    request()->routeIs('retail.supplier.profile') => route('retail.suppliers'),
+                    request()->routeIs('battery.supplier.profile') => route('battery.suppliers'),
+                    request()->routeIs('retail.customer.profile') => route('retail.customers'),
+                    request()->routeIs('battery.customer.profile') => route('battery.customers'),
+                    request()->routeIs('retail.purchase.show') => route('retail.purchases'),
+                    request()->routeIs('battery.purchase.invoice.show') => route('battery.purchases'),
+                    request()->routeIs('retail.invoice.show', 'retail.invoice.due.print') => route('retail.invoices'),
+                    request()->routeIs('battery.invoice.show', 'battery.invoice.due.print') => route('battery.invoices'),
+                    request()->routeIs('retail.return.show', 'retail.purchase-return.show') => route('retail.returns'),
+                    request()->routeIs('battery.return.show') => route('battery.sales.returns'),
+                    request()->routeIs('battery.purchase-return.show') => route('battery.purchase.returns'),
+                    default => null,
+                };
+            @endphp
+            @hasSection('topbar_back_button')
+                @yield('topbar_back_button')
+            @elseif($topbarBackFallback)
+                <a
+                    href="javascript:void(0)"
+                    onclick="if (window.history.length > 1 && document.referrer && document.referrer !== window.location.href) { window.history.back(); } else { window.location.href = '{{ $topbarBackFallback }}'; }"
+                    title="Back"
+                    class="inline-flex items-center justify-center gap-1.5 h-[34px] px-3 rounded-[10px] bg-emerald-50 dark:bg-slate-800 border border-emerald-200 dark:border-slate-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-slate-700 hover:border-emerald-300 text-xs font-bold shadow-2xs transition-all cursor-pointer"
+                >
+                    <i class="fa-solid fa-arrow-left text-[11px]"></i>
+                    <span>Back</span>
+                </a>
+            @endif
+
             {{-- Shop Context Switcher (Retail Shop <-> Battery) --}}
             <div x-data="{ open: false }" @click.outside="open = false" class="relative">
                 <button
@@ -306,9 +337,9 @@
     {{-- Main Page Workspace (Flush 70px when collapsed, 240px when expanded) --}}
     <div
         :class="sidebarCollapsed ? 'lg:ml-[70px]' : 'lg:ml-[240px]'"
-        class="min-h-screen flex flex-col pt-[58px] transition-all duration-200"
+        class="marss-workspace-wrap min-h-screen flex flex-col pt-[58px] transition-all duration-200 print:!ml-0 print:!pt-0"
     >
-        <main class="flex-1 p-2.5 sm:p-4 relative">
+        <main class="flex-1 p-2.5 sm:p-4 relative print:!p-0">
             {{-- Global Page Transition Placeholder Skeleton (Covers Main Content Only, Sidebar & Header Stay Solid) --}}
             <div
                 id="marss-main-skeleton"
@@ -394,7 +425,8 @@
             </div>
 
             <div id="marss-main-content" class="transition-opacity duration-150">
-                {{ $slot }}
+                {{ $slot ?? '' }}
+                @yield('content')
             </div>
         </main>
 

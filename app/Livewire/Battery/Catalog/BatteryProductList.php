@@ -25,7 +25,21 @@ class BatteryProductList extends Component
 
     public string $brandFilter = '';
 
+    public string $categoryFilter = '';
+
+    public int $perPage = 15;
+
     public bool $showModal = false;
+
+    public bool $showQuickViewModal = false;
+
+    public ?BatteryProduct $quickViewProduct = null;
+
+    public bool $showImageModal = false;
+
+    public ?string $viewingImageUrl = null;
+
+    public ?string $viewingImageTitle = null;
 
     public ?int $editingId = null;
 
@@ -52,6 +66,163 @@ class BatteryProductList extends Component
     public $image;
 
     public ?string $existingImage = null;
+
+    public bool $showQuickBrandModal = false;
+
+    public string $quickBrandName = '';
+
+    public string $quickBrandStatus = 'active';
+
+    public $quickBrandLogo;
+
+    public bool $showQuickCategoryModal = false;
+
+    public string $quickCategoryName = '';
+
+    public string $quickCategoryStatus = 'active';
+
+    public $quickCategoryImage;
+
+    public bool $showQuickSubCategoryModal = false;
+
+    public ?int $quickSubCategoryParentId = null;
+
+    public string $quickSubCategoryName = '';
+
+    public string $quickSubCategoryStatus = 'active';
+
+    public bool $showDeleteModal = false;
+
+    public ?int $deletingId = null;
+
+    public string $deletingName = '';
+
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingBrandFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingCategoryFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingPerPage(): void
+    {
+        $this->resetPage();
+    }
+
+    public function resetForm(): void
+    {
+        $this->reset(['product_name', 'product_code', 'brand_id', 'category_id', 'sub_category_id', 'image']);
+        $this->quantity = '0';
+        $this->cost_price = '0';
+        $this->sell_price = '0';
+        $this->status = 'active';
+        $this->resetValidation();
+    }
+
+    public function openQuickBrand(): void
+    {
+        $this->reset(['quickBrandName', 'quickBrandLogo']);
+        $this->quickBrandStatus = 'active';
+        $this->showQuickBrandModal = true;
+    }
+
+    public function saveQuickBrand(SafeImageUploadService $uploads): void
+    {
+        $this->validate([
+            'quickBrandName' => ['required', 'string', 'max:150'],
+            'quickBrandLogo' => ['nullable', 'image', 'max:2048'],
+        ]);
+        $imgPath = $this->quickBrandLogo ? $uploads->store($this->quickBrandLogo, 'battery-brands') : null;
+        $brand = BatteryBrand::create([
+            'name' => trim($this->quickBrandName),
+            'img_url' => $imgPath,
+            'user_id' => Auth::id(),
+        ]);
+        $this->brand_id = $brand->id;
+        $this->reset(['quickBrandName', 'quickBrandLogo']);
+        $this->showQuickBrandModal = false;
+        $this->dispatch('toast', type: 'success', message: "Brand '{$brand->name}' created!");
+    }
+
+    public function openQuickCategory(): void
+    {
+        $this->reset(['quickCategoryName', 'quickCategoryImage']);
+        $this->quickCategoryStatus = 'active';
+        $this->showQuickCategoryModal = true;
+    }
+
+    public function saveQuickCategory(SafeImageUploadService $uploads): void
+    {
+        $this->validate([
+            'quickCategoryName' => ['required', 'string', 'max:150'],
+            'quickCategoryImage' => ['nullable', 'image', 'max:2048'],
+        ]);
+        $imgPath = $this->quickCategoryImage ? $uploads->store($this->quickCategoryImage, 'battery-categories') : null;
+        $cat = BatteryCategory::create([
+            'name' => trim($this->quickCategoryName),
+            'img_url' => $imgPath,
+            'user_id' => Auth::id(),
+        ]);
+        $this->category_id = $cat->id;
+        $this->sub_category_id = null;
+        $this->reset(['quickCategoryName', 'quickCategoryImage']);
+        $this->showQuickCategoryModal = false;
+        $this->dispatch('toast', type: 'success', message: "Category '{$cat->name}' created!");
+    }
+
+    public function openQuickSubCategory(): void
+    {
+        $this->reset(['quickSubCategoryName']);
+        $this->quickSubCategoryParentId = $this->category_id;
+        $this->quickSubCategoryStatus = 'active';
+        $this->showQuickSubCategoryModal = true;
+    }
+
+    public function saveQuickSubCategory(): void
+    {
+        $this->validate([
+            'quickSubCategoryParentId' => ['required', 'integer'],
+            'quickSubCategoryName' => ['required', 'string', 'max:150'],
+        ], [
+            'quickSubCategoryParentId.required' => 'Please select a Category.',
+        ]);
+        $sub = BatterySubCategory::create([
+            'category_id' => $this->quickSubCategoryParentId,
+            'name' => trim($this->quickSubCategoryName),
+            'user_id' => Auth::id(),
+        ]);
+        $this->category_id = $this->quickSubCategoryParentId;
+        $this->sub_category_id = $sub->id;
+        $this->reset(['quickSubCategoryName']);
+        $this->showQuickSubCategoryModal = false;
+        $this->dispatch('toast', type: 'success', message: "Sub-Category '{$sub->name}' created!");
+    }
+
+    public function confirmDelete(int $id): void
+    {
+        $p = BatteryProduct::findOrFail($id);
+        $this->deletingId = $p->id;
+        $this->deletingName = (string) $p->product_name;
+        $this->showDeleteModal = true;
+    }
+
+    public function confirmDeleteAction(SafeImageUploadService $uploads): void
+    {
+        if ($this->deletingId) {
+            $this->delete($this->deletingId, $uploads);
+        }
+        $this->showDeleteModal = false;
+        $this->deletingId = null;
+        $this->deletingName = '';
+    }
 
     public function openCreate(): void
     {
@@ -139,9 +310,28 @@ class BatteryProductList extends Component
         $this->dispatch('toast', type: 'success', message: 'Battery product deleted.');
     }
 
+    public function openQuickView(int $id): void
+    {
+        $this->quickViewProduct = BatteryProduct::with(['brand', 'category', 'subCategory', 'unit'])->findOrFail($id);
+        $this->showQuickViewModal = true;
+    }
+
+    public function openImageModal(string $url, string $title = 'Product Image'): void
+    {
+        $this->viewingImageUrl = $url;
+        $this->viewingImageTitle = $title;
+        $this->showImageModal = true;
+    }
+
     public function closeModal(): void
     {
         $this->showModal = false;
+        $this->showQuickViewModal = false;
+        $this->showImageModal = false;
+        $this->showDeleteModal = false;
+        $this->quickViewProduct = null;
+        $this->viewingImageUrl = null;
+        $this->deletingId = null;
     }
 
     public function render()
@@ -154,13 +344,26 @@ class BatteryProductList extends Component
         if ($this->brandFilter !== '') {
             $query->where('brand_id', (int) $this->brandFilter);
         }
+        if ($this->categoryFilter !== '') {
+            $query->where('category_id', (int) $this->categoryFilter);
+        }
+
+        $allFiltered = (clone $query)->get(['quantity', 'cost_price', 'sell_price']);
+        $totalQuantity = (float) $allFiltered->sum(fn ($p) => (float) ($p->quantity ?? 0));
+        $totalCostPrice = (float) $allFiltered->sum(fn ($p) => (float) ($p->cost_price ?? 0));
+        $totalCostQuantityPrice = (float) $allFiltered->sum(fn ($p) => (float) ($p->cost_price ?? 0) * (float) ($p->quantity ?? 0));
+        $totalSellingPrice = (float) $allFiltered->sum(fn ($p) => (float) ($p->sell_price ?? 0));
 
         return view('livewire.battery.catalog.battery-product-list', [
-            'products' => $query->paginate(15),
+            'products' => $query->paginate($this->perPage),
             'brands' => BatteryBrand::orderBy('name')->get(),
             'categories' => BatteryCategory::orderBy('name')->get(),
             'subCategories' => $this->category_id ? BatterySubCategory::where('category_id', $this->category_id)->orderBy('name')->get() : BatterySubCategory::orderBy('name')->get(),
             'units' => BatteryUnit::orderBy('unit_name')->get(),
+            'totalQuantity' => $totalQuantity,
+            'totalCostPrice' => $totalCostPrice,
+            'totalCostQuantityPrice' => $totalCostQuantityPrice,
+            'totalSellingPrice' => $totalSellingPrice,
         ]);
     }
 }

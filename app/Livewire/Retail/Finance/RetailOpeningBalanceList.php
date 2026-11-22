@@ -18,6 +18,12 @@ class RetailOpeningBalanceList extends Component
 
     public bool $showModal = false;
 
+    public bool $showDeleteModal = false;
+
+    public ?int $deletingId = null;
+
+    public string $deletingLabel = '';
+
     public ?int $editingId = null;
 
     public string $date = '';
@@ -61,6 +67,24 @@ class RetailOpeningBalanceList extends Component
         ActivityLogger::log($this->editingId ? 'Update' : 'Create', 'Retail / Opening Balance', "Set Retail opening balance for {$ob->date}: ৳{$ob->amount}.");
         $this->showModal = false;
         $this->dispatch('toast', type: 'success', message: 'Opening balance saved!');
+    }
+
+    public function confirmDelete(int $id): void
+    {
+        $ob = RetailOpeningBalance::findOrFail($id);
+        $this->deletingId = $ob->id;
+        $this->deletingLabel = "opening balance for " . Carbon::parse($ob->date)->format('d-m-Y') . " (৳" . Money::round($ob->amount) . ")";
+        $this->showDeleteModal = true;
+    }
+
+    public function executeDelete(): void
+    {
+        if ($this->deletingId) {
+            $this->delete($this->deletingId);
+            $this->showDeleteModal = false;
+            $this->deletingId = null;
+            $this->deletingLabel = '';
+        }
     }
 
     public function delete(int $id): void

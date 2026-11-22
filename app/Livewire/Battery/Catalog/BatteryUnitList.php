@@ -15,6 +15,12 @@ class BatteryUnitList extends Component
 
     public bool $showModal = false;
 
+    public bool $showDeleteModal = false;
+
+    public ?int $deletingId = null;
+
+    public string $deletingName = '';
+
     public ?int $editingId = null;
 
     public string $unit_name = '';
@@ -44,6 +50,22 @@ class BatteryUnitList extends Component
         $this->dispatch('toast', type: 'success', message: 'Battery unit saved!');
     }
 
+    public function confirmDelete(int $id): void
+    {
+        $u = BatteryUnit::findOrFail($id);
+        $this->deletingId = $u->id;
+        $this->deletingName = (string) $u->unit_name;
+        $this->showDeleteModal = true;
+    }
+
+    public function confirmDeleteAction(): void
+    {
+        if ($this->deletingId) {
+            $this->delete($this->deletingId);
+        }
+        $this->closeModal();
+    }
+
     public function delete(int $id): void
     {
         BatteryUnit::findOrFail($id)->delete();
@@ -53,6 +75,9 @@ class BatteryUnitList extends Component
     public function closeModal(): void
     {
         $this->showModal = false;
+        $this->showDeleteModal = false;
+        $this->deletingId = null;
+        $this->deletingName = '';
     }
 
     public function render()

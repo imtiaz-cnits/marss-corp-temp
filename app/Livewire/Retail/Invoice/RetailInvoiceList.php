@@ -347,14 +347,14 @@ class RetailInvoiceList extends Component
 
     public function render()
     {
-        $query = RetailOrder::with(['customer', 'payments'])->orderByDesc('id');
+        $query = RetailOrder::with(['customer', 'user', 'payments'])->orderByDesc('id');
 
         if (trim($this->search) !== '') {
             $term = '%'.trim($this->search).'%';
             $query->where(function ($q) use ($term) {
                 $q->where('order_no', 'like', $term)
                     ->orWhere('order_note', 'like', $term)
-                    ->orWhereHas('customer', fn ($cq) => $cq->where('customer_name', 'like', $term)->orWhere('mobile', 'like', $term));
+                    ->orWhereHas('customer', fn ($cq) => $cq->where('customer_name', 'like', $term)->orWhere('mobile', 'like', $term)->orWhere('customer_id', 'like', $term));
             });
         }
 

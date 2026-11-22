@@ -72,7 +72,7 @@ class BatteryCustomerProfile extends Component
         $balance = $service->customerBalance($customer->id);
         $orders = BatteryOrder::where('customer_id', $customer->id)->orderByDesc('id')->get();
         $payments = BatteryOrderPaymentDetail::with('order')->whereIn('order_id', $orders->pluck('id'))->orderByDesc('id')->get();
-        $returns = BatteryProductReturn::with('product')->where('customer_id', $customer->id)->orderByDesc('id')->get();
+        $returns = BatteryProductReturn::with(['product', 'order'])->where('customer_id', $customer->id)->orderByDesc('id')->get();
 
         return view('livewire.battery.customer.battery-customer-profile', compact('customer', 'balance', 'orders', 'payments', 'returns'));
     }

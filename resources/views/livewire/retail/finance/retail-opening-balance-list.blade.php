@@ -25,7 +25,7 @@
                             <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ $r->note ?: '—' }}</td>
                             <td class="px-4 py-3 text-right">
                                 <button type="button" wire:click="openEdit({{ $r->id }})" class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold cursor-pointer">Edit</button>
-                                <button type="button" wire:click="delete({{ $r->id }})" wire:confirm="Delete opening balance for {{ $r->date }}?" class="ml-1 px-2.5 py-1 rounded-lg bg-red-50 text-red-600 text-xs font-bold cursor-pointer">Delete</button>
+                                <button type="button" wire:click="confirmDelete({{ $r->id }})" class="ml-1 px-2.5 py-1 rounded-lg bg-red-50 text-red-600 text-xs font-bold cursor-pointer">Delete</button>
                             </td>
                         </tr>
                     @empty
@@ -48,4 +48,23 @@
             </div>
         </form>
     </x-ui.modal>
+
+    {{-- CUSTOM DELETE CONFIRMATION MODAL (1:1 Reference) --}}
+    @if($showDeleteModal)
+        <div data-marss-modal="true" class="fixed inset-0 z-[80] !m-0 overflow-hidden bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4">
+            <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 text-center animate-in fade-in zoom-in-95 duration-150">
+                <div class="w-16 h-16 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-500 flex items-center justify-center mx-auto mb-4 border border-rose-100 dark:border-rose-900/50">
+                    <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Are you sure?</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
+                    Do you really want to delete <span class="font-bold text-slate-800 dark:text-slate-200">{{ $deletingLabel }}</span>? This action cannot be undone.
+                </p>
+                <div class="flex items-center justify-center gap-3">
+                    <button type="button" wire:click="$set('showDeleteModal', false)" class="h-10 px-5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-bold hover:bg-slate-50 cursor-pointer">Cancel</button>
+                    <button type="button" wire:click="executeDelete" class="h-10 px-5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold shadow-xs border-0 cursor-pointer">Yes, Delete</button>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

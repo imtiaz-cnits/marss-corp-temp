@@ -17,15 +17,39 @@ class BatteryStockOverview extends Component
 
     public string $search = '';
 
+    public string $sort = 'category_asc';
+
+    public int $perPage = 15;
+
     public bool $showAdjustModal = false;
 
     public ?int $adjustProductId = null;
 
     public string $adjustProductName = '';
 
+    public int $adjustCurrentStock = 0;
+
+    public string $adjustUnitName = 'Pcs';
+
     public int $adjustQuantity = 0;
 
-    public string $adjustReason = '';
+    public string $adjustReason = 'Physical Inventory Recount';
+
+    public bool $showImageModal = false;
+
+    public ?string $viewingImageUrl = null;
+
+    public ?string $viewingImageTitle = null;
+
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingPerPage(): void
+    {
+        $this->resetPage();
+    }
 
     public function setTab(string $tab): void
     {
@@ -33,22 +57,41 @@ class BatteryStockOverview extends Component
         $this->resetPage();
     }
 
+    public function setSort(string $sort): void
+    {
+        $this->sort = in_array($sort, ['category_asc', 'name_asc', 'name_desc', 'stock_asc', 'stock_desc', 'default'], true) ? $sort : 'category_asc';
+        $this->resetPage();
+    }
+
     public function openAdjust(int $id): void
     {
-        $p = BatteryProduct::findOrFail($id);
+        $p = BatteryProduct::with('unit')->findOrFail($id);
         $this->adjustProductId = $p->id;
         $this->adjustProductName = (string) $p->product_name;
-        $this->adjustQuantity = (int) round((float) ($p->quantity ?? 0));
-        $this->adjustReason = '';
+        $this->adjustCurrentStock = (int) round((float) ($p->quantity ?? 0));
+        $this->adjustUnitName = (string) ($p->unit?->unit_name ?: 'Pcs');
+        $this->adjustQuantity = $this->adjustCurrentStock;
+        $this->adjustReason = 'Physical Inventory Recount';
         $this->showAdjustModal = true;
+    }
+
+    public function openImageModal(string $url, string $title = 'Product Preview'): void
+    {
+        $this->viewingImageUrl = $url;
+        $this->viewingImageTitle = $title;
+        $this->showImageModal = true;
     }
 
     public function submitAdjust(BatteryStockService $service): void
     {
         try {
-            $service->manualAdjust((int) $this->adjustProductId, (int) $this->adjustQuantity, $this->adjustReason ?: 'Manual adjustment');
+            $service->manualAdjust(
+                (int) $this->adjustProductId,
+                (int) $this->adjustQuantity,
+                $this->adjustReason ?: 'Physical Inventory Recount',
+            );
             $this->showAdjustModal = false;
-            $this->dispatch('toast', type: 'success', message: 'Battery stock updated!');
+            $this->dispatch('toast', type: 'success', message: "Battery stock updated for '{$this->adjustProductName}'!");
         } catch (\Throwable $e) {
             $this->dispatch('toast', type: 'error', message: $e->getMessage());
         }
@@ -57,25 +100,71 @@ class BatteryStockOverview extends Component
     public function closeModal(): void
     {
         $this->showAdjustModal = false;
+        $this->showImageModal = false;
+        $this->viewingImageUrl = null;
     }
 
     public function render(BatteryStockService $service)
     {
-        $query = BatteryProduct::with(['brand', 'unit']);
+        $query = BatteryProduct::query()
+            ->select('battery_products.*')
+            ->leftJoin('battery_categories', 'battery_categories.id', '=', 'battery_products.category_id')
+            ->with(['brand', 'category', 'unit']);
+
         if ($this->tab === 'out') {
-            $query->whereRaw('CAST(COALESCE(quantity, 0) AS SIGNED) <= 0');
+            $query->whereRaw('CAST(COALESCE(battery_products.quantity, 0) AS SIGNED) <= 0');
         } elseif ($this->tab === 'low') {
-            $query->whereRaw('CAST(COALESCE(quantity, 0) AS SIGNED) > 0 AND CAST(COALESCE(quantity, 0) AS SIGNED) < 10');
+            $query->whereRaw('CAST(COALESCE(battery_products.quantity, 0) AS SIGNED) > 0 AND CAST(COALESCE(battery_products.quantity, 0) AS SIGNED) <= 5');
         } elseif ($this->tab === 'available') {
-            $query->whereRaw('CAST(COALESCE(quantity, 0) AS SIGNED) >= 10');
+            $query->whereRaw('CAST(COALESCE(battery_products.quantity, 0) AS SIGNED) > 5');
         }
+
         if (trim($this->search) !== '') {
-            $query->where('product_name', 'like', '%'.trim($this->search).'%');
+            $term = '%'.trim($this->search).'%';
+            $query->where(function ($q) use ($term) {
+                $q->where('battery_products.product_name', 'like', $term)
+                    ->orWhere('battery_products.product_code', 'like', $term)
+                    ->orWhere('battery_categories.name', 'like', $term);
+            });
         }
+
+        match ($this->sort) {
+            'name_asc' => $query->orderBy('battery_products.product_name', 'asc'),
+            'name_desc' => $query->orderBy('battery_products.product_name', 'desc'),
+            'stock_asc' => $query->orderByRaw('CAST(COALESCE(battery_products.quantity, 0) AS SIGNED) ASC'),
+            'stock_desc' => $query->orderByRaw('CAST(COALESCE(battery_products.quantity, 0) AS SIGNED) DESC'),
+            'default' => $query->orderByDesc('battery_products.id'),
+            default => $query->orderByRaw("COALESCE(battery_categories.name, 'ZZZ') ASC")->orderBy('battery_products.product_name', 'asc'),
+        };
+
+        $filteredAll = (clone $query)->get();
+        $filteredTotalQty = (int) $filteredAll->sum(fn ($p) => (int) round((float) ($p->quantity ?? 0)));
+        $filteredTotalCost = (float) $filteredAll->sum(fn ($p) => (float) ($p->cost_price ?? 0) * (float) ($p->quantity ?? 0));
+        $filteredTotalSell = (float) $filteredAll->sum(fn ($p) => (float) ($p->sell_price ?? 0) * (float) ($p->quantity ?? 0));
+
+        $exportRows = $filteredAll->map(function ($p) {
+            $qty = (int) round((float) ($p->quantity ?? 0));
+            $codes = $p->decodedCodes();
+
+            return [
+                'name' => (string) ($p->product_name ?: '-'),
+                'barcode' => ! empty($codes) ? implode(', ', $codes) : 'N/A',
+                'category' => (string) ($p->category?->name ?: 'N/A'),
+                'qty' => $qty,
+                'unit' => (string) ($p->unit?->unit_name ?: 'Pcs'),
+                'cost' => (float) ($p->cost_price ?? 0),
+                'sell' => (float) ($p->sell_price ?? 0),
+                'status' => $qty <= 0 ? 'Out of Stock' : ($qty <= 5 ? 'Low Stock' : 'Available'),
+            ];
+        })->values()->all();
 
         return view('livewire.battery.catalog.battery-stock-overview', [
             'summary' => $service->summaryMetrics(),
-            'products' => $query->orderByRaw('CAST(COALESCE(quantity, 0) AS SIGNED) ASC')->paginate(20),
+            'products' => $query->paginate($this->perPage),
+            'filteredTotalQty' => $filteredTotalQty,
+            'filteredTotalCost' => $filteredTotalCost,
+            'filteredTotalSell' => $filteredTotalSell,
+            'exportRows' => $exportRows,
         ]);
     }
 }

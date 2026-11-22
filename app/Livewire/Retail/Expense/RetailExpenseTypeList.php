@@ -15,13 +15,31 @@ class RetailExpenseTypeList extends Component
 
     public string $search = '';
 
+    public int $perPage = 15;
+
     public bool $showModal = false;
+
+    public bool $showDeleteModal = false;
+
+    public ?int $deletingId = null;
+
+    public string $deletingLabel = '';
 
     public ?int $editingId = null;
 
     public string $type_name = '';
 
     public string $status = 'active';
+
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingPerPage(): void
+    {
+        $this->resetPage();
+    }
 
     public function openCreate(): void
     {
@@ -53,6 +71,29 @@ class RetailExpenseTypeList extends Component
         $this->dispatch('toast', type: 'success', message: 'Expense type saved!');
     }
 
+    public function confirmDelete(int $id): void
+    {
+        $t = RetailExpenseType::findOrFail($id);
+        if (stripos((string) $t->type_name, 'salary') !== false) {
+            $this->dispatch('toast', type: 'error', message: 'Salary expense types are protected and cannot be deleted.');
+
+            return;
+        }
+        $this->deletingId = $t->id;
+        $this->deletingLabel = "expense type '{$t->type_name}'";
+        $this->showDeleteModal = true;
+    }
+
+    public function executeDelete(): void
+    {
+        if ($this->deletingId) {
+            $this->delete($this->deletingId);
+            $this->showDeleteModal = false;
+            $this->deletingId = null;
+            $this->deletingLabel = '';
+        }
+    }
+
     public function delete(int $id): void
     {
         $t = RetailExpenseType::findOrFail($id);
@@ -76,7 +117,7 @@ class RetailExpenseTypeList extends Component
             'types' => RetailExpenseType::query()
                 ->when($this->search !== '', fn ($q) => $q->where('type_name', 'like', '%'.trim($this->search).'%'))
                 ->orderByDesc('id')
-                ->paginate(15),
+                ->paginate($this->perPage),
         ]);
     }
 }

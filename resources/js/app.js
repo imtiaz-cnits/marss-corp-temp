@@ -2,11 +2,14 @@ import ApexCharts from 'apexcharts';
 import flatpickr from 'flatpickr';
 import JsBarcode from 'jsbarcode';
 import { Html5Qrcode } from 'html5-qrcode';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 window.ApexCharts = ApexCharts;
 window.flatpickr = flatpickr;
 window.JsBarcode = JsBarcode;
 window.Html5Qrcode = Html5Qrcode;
+window.jsPDF = jsPDF;
 
 // Single authoritative Dark/Light theme controller
 window.marssTheme = {
@@ -698,9 +701,406 @@ window.marssExport = {
         const a = document.createElement('a');
         a.href = url;
         a.download = name;
+        a.rel = 'noopener';
+        a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
+        setTimeout(() => {
+            a.remove();
+            URL.revokeObjectURL(url);
+        }, 1500);
+    },
+};
+
+// Reference Parity: Stock Overview Export (Excel .xls, Direct PDF download via jsPDF+autoTable, Print with 16px margin & bottom signatures)
+window.marssStockOverviewExport = {
+    _bdFormat(num) {
+        const n = Number(num || 0);
+        const neg = n < 0;
+        const parts = Math.abs(n).toFixed(2).split('.');
+        let intPart = parts[0];
+        if (intPart.length > 3) {
+            const last3 = intPart.slice(-3);
+            const rest = intPart.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ',');
+            intPart = rest + ',' + last3;
+        }
+        return (neg ? '-' : '') + intPart + '.' + parts[1];
+    },
+    _esc(val) {
+        return String(val ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    },
+    _toast(message, type = 'success') {
+        window.dispatchEvent(new CustomEvent('toast', { detail: { type, message } }));
+    },
+    _getPayload() {
+        const el = document.getElementById('stockExportPayload');
+        if (!el) return { rows: [], moduleLabel: 'Retail Module', filePrefix: 'stock_overview', filterKey: 'all', filterLabel: 'All Stock' };
+        let rows = [];
+        try {
+            rows = JSON.parse(el.dataset.rows || '[]');
+        } catch {
+            rows = [];
+        }
+        return {
+            rows: Array.isArray(rows) ? rows : [],
+            moduleLabel: el.dataset.moduleLabel || 'Retail Module',
+            filePrefix: el.dataset.filePrefix || 'stock_overview',
+            filterKey: el.dataset.filterKey || 'all',
+            filterLabel: el.dataset.filterLabel || 'All Stock',
+        };
+    },
+    excel() {
+        const { rows, moduleLabel, filePrefix, filterKey, filterLabel } = this._getPayload();
+        if (!rows.length) {
+            this._toast('No stock data to export!', 'error');
+            return;
+        }
+        let totQty = 0;
+        let totCost = 0;
+        let totSell = 0;
+        let rowsHtml = '';
+        rows.forEach((item, idx) => {
+            const qty = Number(item.qty || 0);
+            const cp = Number(item.cost || 0);
+            const sp = Number(item.sell || 0);
+            const unit = this._esc(item.unit || 'pcs');
+            totQty += qty;
+            totCost += cp * qty;
+            totSell += sp * qty;
+            const status = this._esc(item.status || (qty <= 0 ? 'Out of Stock' : qty <= 5 ? 'Low Stock' : 'Available'));
+            rowsHtml +=
+                `<tr>` +
+                `<td align="center" style="border:1px solid #cbd5e1; padding:6px; mso-number-format:'0';">${idx + 1}</td>` +
+                `<td align="left" style="border:1px solid #cbd5e1; padding:6px; mso-number-format:'\\@';">${this._esc(item.name || '-')}</td>` +
+                `<td align="left" style="border:1px solid #cbd5e1; padding:6px; mso-number-format:'\\@';">${this._esc(item.barcode || 'N/A')}</td>` +
+                `<td align="left" style="border:1px solid #cbd5e1; padding:6px; mso-number-format:'\\@';">${this._esc(item.category || 'N/A')}</td>` +
+                `<td align="center" style="border:1px solid #cbd5e1; padding:6px;">${qty} ${unit}</td>` +
+                `<td align="right" style="border:1px solid #cbd5e1; padding:6px; mso-number-format:'#,##0.00';">${cp.toFixed(2)}</td>` +
+                `<td align="right" style="border:1px solid #cbd5e1; padding:6px; mso-number-format:'#,##0.00';">${sp.toFixed(2)}</td>` +
+                `<td align="center" style="border:1px solid #cbd5e1; padding:6px;">${status}</td>` +
+                `</tr>`;
+        });
+        const dateStr = new Date().toLocaleDateString('en-GB');
+        const excelHtml =
+            `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">` +
+            `<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">` +
+            `<style>th { background-color: #15803d; color: #ffffff; font-weight: bold; border: 1px solid #15803d; } td { border: 1px solid #cbd5e1; }</style>` +
+            `</head><body>` +
+            `<table border="1" style="border-collapse:collapse; font-family:Arial, sans-serif; font-size:11px;">` +
+            `<thead>` +
+            `<tr><th colspan="8" style="background-color:#15803d; color:#ffffff; font-size:15px; font-weight:bold; text-align:center; height:32px; border:1px solid #15803d;">MARSS CORPORATION</th></tr>` +
+            `<tr><th colspan="8" style="background-color:#f0fdf4; color:#166534; font-size:11px; font-weight:bold; text-align:center; height:24px; border:1px solid #bbf7d0;">${this._esc(moduleLabel)} — Stock Overview Report (${this._esc(filterLabel)}) - ${dateStr}</th></tr>` +
+            `<tr style="background-color:#15803d; color:#ffffff; font-weight:bold; height:26px;">` +
+            `<th style="background-color:#15803d; color:#ffffff; text-align:center; width:45px; border:1px solid #15803d;">SL</th>` +
+            `<th style="background-color:#15803d; color:#ffffff; text-align:left; width:220px; border:1px solid #15803d;">Product Name</th>` +
+            `<th style="background-color:#15803d; color:#ffffff; text-align:left; width:160px; border:1px solid #15803d;">Barcode / Code</th>` +
+            `<th style="background-color:#15803d; color:#ffffff; text-align:left; width:130px; border:1px solid #15803d;">Category</th>` +
+            `<th style="background-color:#15803d; color:#ffffff; text-align:center; width:90px; border:1px solid #15803d;">Stock Qty</th>` +
+            `<th style="background-color:#15803d; color:#ffffff; text-align:right; width:110px; border:1px solid #15803d;">Cost Price (BDT)</th>` +
+            `<th style="background-color:#15803d; color:#ffffff; text-align:right; width:110px; border:1px solid #15803d;">Sell Price (BDT)</th>` +
+            `<th style="background-color:#15803d; color:#ffffff; text-align:center; width:100px; border:1px solid #15803d;">Status</th>` +
+            `</tr></thead>` +
+            `<tbody>${rowsHtml}</tbody>` +
+            `<tfoot><tr style="font-weight:bold; background-color:#f1f5f9; height:26px;">` +
+            `<td colspan="4" align="right" style="border:1px solid #cbd5e1; font-weight:bold; padding:6px;">Grand Total:</td>` +
+            `<td align="center" style="border:1px solid #cbd5e1; font-weight:bold; color:#15803d; padding:6px;">${totQty}</td>` +
+            `<td align="right" style="border:1px solid #cbd5e1; font-weight:bold; padding:6px;">৳ ${this._bdFormat(totCost)}</td>` +
+            `<td align="right" style="border:1px solid #cbd5e1; font-weight:bold; color:#047857; padding:6px;">৳ ${this._bdFormat(totSell)}</td>` +
+            `<td style="border:1px solid #cbd5e1;"></td>` +
+            `</tr></tfoot></table></body></html>`;
+
+        const blob = new Blob(['\ufeff', excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+        const today = new Date().toISOString().split('T')[0];
+        window.marssExport._download(blob, `${filePrefix}_${filterKey}_${today}.xls`);
+        this._toast('Excel file downloaded successfully!', 'success');
+    },
+    pdf() {
+        const { rows, moduleLabel, filePrefix, filterKey, filterLabel } = this._getPayload();
+        if (!rows.length) {
+            this._toast('No stock data to export!', 'error');
+            return;
+        }
+        try {
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const dateStr = new Date().toLocaleDateString('en-GB');
+
+            let totQty = 0;
+            let totCost = 0;
+            let totSell = 0;
+
+            const bodyRows = rows.map((item, idx) => {
+                const qty = Number(item.qty || 0);
+                const cp = Number(item.cost || 0);
+                const sp = Number(item.sell || 0);
+                const unit = String(item.unit || 'pcs');
+                totQty += qty;
+                totCost += cp * qty;
+                totSell += sp * qty;
+                const status = String(item.status || (qty <= 0 ? 'Out of Stock' : qty <= 5 ? 'Low Stock' : 'Available'));
+                return [
+                    String(idx + 1),
+                    String(item.name || '-'),
+                    String(item.barcode || 'N/A'),
+                    String(item.category || 'N/A'),
+                    `${qty} ${unit}`,
+                    `TK ${this._bdFormat(cp)}`,
+                    `TK ${this._bdFormat(sp)}`,
+                    status,
+                ];
+            });
+
+            // Header
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(16);
+            doc.setTextColor(21, 128, 61);
+            doc.text('MARSS CORPORATION', pageWidth / 2, 13, { align: 'center' });
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9.5);
+            doc.setTextColor(71, 85, 105);
+            doc.text(`${moduleLabel} - Stock Overview Report (${filterLabel})`, pageWidth / 2, 18.5, { align: 'center' });
+            doc.text(`Date: ${dateStr}`, pageWidth / 2, 23, { align: 'center' });
+
+            // Green divider line
+            doc.setDrawColor(21, 128, 61);
+            doc.setLineWidth(0.6);
+            doc.line(10, 25.5, pageWidth - 10, 25.5);
+
+            // Summary bar
+            doc.setFillColor(248, 250, 252);
+            doc.setDrawColor(226, 232, 240);
+            doc.setLineWidth(0.3);
+            doc.roundedRect(10, 28, pageWidth - 20, 8, 1.5, 1.5, 'FD');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8.5);
+            doc.setTextColor(30, 41, 59);
+            doc.text(`Filter: ${filterLabel}`, 28, 33, { align: 'center' });
+            doc.text(`Total Records: ${rows.length}`, pageWidth / 2, 33, { align: 'center' });
+            doc.text(`Total Units: ${totQty}`, pageWidth - 28, 33, { align: 'center' });
+
+            autoTable(doc, {
+                startY: 39,
+                margin: { left: 10, right: 10, bottom: 26 },
+                head: [['SL', 'Product Name', 'Barcode / Code', 'Category', 'Stock Qty', 'Cost Price', 'Sell Price', 'Status']],
+                body: bodyRows,
+                foot: [['', '', '', 'Grand Total:', String(totQty), `TK ${this._bdFormat(totCost)}`, `TK ${this._bdFormat(totSell)}`, '']],
+                showFoot: 'lastPage',
+                theme: 'grid',
+                styles: {
+                    font: 'helvetica',
+                    fontSize: 7.5,
+                    cellPadding: 2,
+                    lineColor: [203, 213, 225],
+                    lineWidth: 0.2,
+                    textColor: [30, 41, 59],
+                    valign: 'middle',
+                },
+                headStyles: {
+                    fillColor: [21, 128, 61],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    halign: 'left',
+                },
+                footStyles: {
+                    fillColor: [241, 245, 249],
+                    textColor: [15, 23, 42],
+                    fontStyle: 'bold',
+                },
+                alternateRowStyles: {
+                    fillColor: [248, 250, 252],
+                },
+                columnStyles: {
+                    0: { halign: 'center', cellWidth: 10 },
+                    1: { halign: 'left' },
+                    2: { halign: 'left', cellWidth: 28 },
+                    3: { halign: 'left', cellWidth: 24 },
+                    4: { halign: 'center', cellWidth: 20, fontStyle: 'bold' },
+                    5: { halign: 'right', cellWidth: 24 },
+                    6: { halign: 'right', cellWidth: 24, textColor: [4, 120, 87], fontStyle: 'bold' },
+                    7: { halign: 'center', cellWidth: 21, fontStyle: 'bold' },
+                },
+                didParseCell(data) {
+                    if (data.section === 'head' && [0, 4, 7].includes(data.column.index)) {
+                        data.cell.styles.halign = 'center';
+                    }
+                    if (data.section === 'head' && [5, 6].includes(data.column.index)) {
+                        data.cell.styles.halign = 'right';
+                    }
+                    if (data.section === 'foot') {
+                        if (data.column.index === 3) data.cell.styles.halign = 'right';
+                        if (data.column.index === 4) {
+                            data.cell.styles.halign = 'center';
+                            data.cell.styles.textColor = [21, 128, 61];
+                        }
+                        if (data.column.index === 5) data.cell.styles.halign = 'right';
+                        if (data.column.index === 6) {
+                            data.cell.styles.halign = 'right';
+                            data.cell.styles.textColor = [4, 120, 87];
+                        }
+                    }
+                    if (data.section === 'body' && (data.column.index === 4 || data.column.index === 7)) {
+                        const rowItem = rows[data.row.index];
+                        const q = Number(rowItem?.qty || 0);
+                        data.cell.styles.textColor = q <= 0 ? [190, 18, 60] : q <= 5 ? [180, 83, 9] : [21, 128, 61];
+                    }
+                },
+            });
+
+            // Draw bottom signatures on last page
+            const sigY = pageHeight - 14;
+            doc.setDrawColor(51, 65, 85);
+            doc.setLineWidth(0.35);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8.5);
+            doc.setTextColor(30, 41, 59);
+
+            const sigPositions = [
+                { x: 35, label: 'Cashier Signature' },
+                { x: pageWidth / 2, label: 'Accountant Signature' },
+                { x: pageWidth - 35, label: 'Owner Signature' },
+            ];
+            sigPositions.forEach(({ x, label }) => {
+                doc.line(x - 20, sigY - 4, x + 20, sigY - 4);
+                doc.text(label, x, sigY, { align: 'center' });
+            });
+
+            const today = new Date().toISOString().split('T')[0];
+            doc.save(`${filePrefix}_${filterKey}_${today}.pdf`);
+            this._toast('PDF downloaded successfully!', 'success');
+        } catch (err) {
+            console.error('PDF generation error:', err);
+            this._toast('PDF generation failed.', 'error');
+        }
+    },
+    print() {
+        const { rows, moduleLabel, filterLabel } = this._getPayload();
+        if (!rows.length) {
+            this._toast('No stock data to print!', 'error');
+            return;
+        }
+        const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        let totQty = 0;
+        let totCost = 0;
+        let totSell = 0;
+        let rowsHtml = '';
+        rows.forEach((item, index) => {
+            const qty = Number(item.qty || 0);
+            const cp = Number(item.cost || 0);
+            const sp = Number(item.sell || 0);
+            const unit = this._esc(item.unit || 'pcs');
+            totQty += qty;
+            totCost += cp * qty;
+            totSell += sp * qty;
+            const status = this._esc(item.status || (qty <= 0 ? 'Out of Stock' : qty <= 5 ? 'Low Stock' : 'Available'));
+            const qtyColor = qty <= 0 ? '#be123c' : qty <= 5 ? '#d97706' : '#15803d';
+            const statusColor = qty <= 0 ? '#be123c' : qty <= 5 ? '#b45309' : '#15803d';
+            rowsHtml += `
+                <tr>
+                    <td style="text-align:center; padding:4px; border:1px solid #cbd5e1; font-size:9.5px;">${index + 1}</td>
+                    <td style="padding:4px 6px; border:1px solid #cbd5e1; font-size:9.5px;"><strong>${this._esc(item.name || '-')}</strong></td>
+                    <td style="padding:4px 6px; border:1px solid #cbd5e1; font-size:9.5px; font-family:monospace;">${this._esc(item.barcode || 'N/A')}</td>
+                    <td style="padding:4px 6px; border:1px solid #cbd5e1; font-size:9.5px;">${this._esc(item.category || 'N/A')}</td>
+                    <td style="text-align:center; padding:4px 6px; border:1px solid #cbd5e1; font-size:9.5px; font-weight:bold; white-space:nowrap; color:${qtyColor};">${qty} ${unit}</td>
+                    <td style="text-align:right; padding:4px 6px; border:1px solid #cbd5e1; font-size:9.5px; white-space:nowrap;">৳ ${this._bdFormat(cp)}</td>
+                    <td style="text-align:right; padding:4px 6px; border:1px solid #cbd5e1; font-size:9.5px; color:#047857; font-weight:bold; white-space:nowrap;">৳ ${this._bdFormat(sp)}</td>
+                    <td style="text-align:center; padding:4px 6px; border:1px solid #cbd5e1; font-size:9px; font-weight:bold; white-space:nowrap; color:${statusColor};">${status}</td>
+                </tr>
+            `;
+        });
+        const printWin = window.open('', '_blank', 'width=960,height=720');
+        if (!printWin) {
+            window.print();
+            return;
+        }
+        printWin.document.write(`<!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Stock Overview - Print</title>
+                <style>
+                    @page { size: A4 portrait; margin: 16px !important; }
+                    * { box-sizing: border-box; }
+                    html, body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 0; color: #111; background: #fff; }
+                    .print-layout { width: 100%; border-collapse: collapse; }
+                    .print-layout > tbody > tr > td { border: none; padding: 16px 16px 0 16px; vertical-align: top; }
+                    .print-layout > tfoot > tr > td { border: none; padding: 0; height: 76px; }
+                    .report-header { text-align: center; border-bottom: 2px solid #15803d; padding-bottom: 6px; margin-bottom: 8px; }
+                    .report-header h1 { margin: 0; color: #15803d; font-size: 18px; font-weight: 800; }
+                    .report-header p { margin: 2px 0; font-size: 10px; color: #475569; }
+                    .summary-bar { display: flex; justify-content: space-around; margin: 6px 0; padding: 5px 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 10px; font-weight: 700; }
+                    table.data-table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 9.5px; }
+                    table.data-table th { background-color: #15803d !important; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 6px 5px; text-align: left; font-size: 9.5px; border: 1px solid #15803d; white-space: nowrap; }
+                    table.data-table td { border: 1px solid #cbd5e1; }
+                    table.data-table tfoot td { background-color: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; border-top: 2px solid #15803d; padding: 6px 5px; font-size: 9.5px; white-space: nowrap; }
+                    .signatures { position: fixed; bottom: 16px; left: 16px; right: 16px; display: flex; justify-content: space-between; text-align: center; font-size: 10px; font-weight: 600; padding: 10px 20px 0 20px; background: #fff; }
+                    .signatures div { border-top: 1px solid #333; width: 140px; padding-top: 4px; }
+                    @media screen {
+                        body { padding: 16px; }
+                        .print-layout { min-height: calc(100vh - 32px); }
+                    }
+                </style>
+            </head>
+            <body>
+                <table class="print-layout">
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="report-header">
+                                    <h1>MARSS CORPORATION</h1>
+                                    <p>${this._esc(moduleLabel)} — Stock Overview Report (${this._esc(filterLabel)})</p>
+                                    <p>Date: ${dateStr}</p>
+                                    <div class="summary-bar">
+                                        <span>Filter: <strong>${this._esc(filterLabel)}</strong></span>
+                                        <span>Total Items: <strong>${rows.length}</strong></span>
+                                        <span>Total Qty: <strong>${totQty}</strong></span>
+                                    </div>
+                                </div>
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align:center; width:35px;">SL</th>
+                                            <th>Product Name</th>
+                                            <th>Barcode / Code</th>
+                                            <th>Category</th>
+                                            <th style="text-align:center;">Stock Qty</th>
+                                            <th style="text-align:right;">Cost Price</th>
+                                            <th style="text-align:right;">Sell Price</th>
+                                            <th style="text-align:center;">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${rowsHtml}</tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="4" style="text-align:right;">Grand Total:</td>
+                                            <td style="text-align:center; color:#15803d;">${totQty}</td>
+                                            <td style="text-align:right;">৳ ${this._bdFormat(totCost)}</td>
+                                            <td style="text-align:right; color:#047857;">৳ ${this._bdFormat(totSell)}</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot><tr><td>&nbsp;</td></tr></tfoot>
+                </table>
+                <div class="signatures">
+                    <div>Cashier Signature</div>
+                    <div>Accountant Signature</div>
+                    <div>Owner Signature</div>
+                </div>
+            </body>
+            </html>`);
+        printWin.document.close();
+        printWin.focus();
+        setTimeout(() => {
+            printWin.print();
+        }, 350);
     },
 };

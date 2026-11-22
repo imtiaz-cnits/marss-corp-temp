@@ -19,8 +19,8 @@
     </button>
 </div>
 
-<div class="invoice-sheet bg-white border border-slate-300 shadow-xl w-full max-w-[8in] min-h-[10.5in] mx-auto p-4 flex flex-col justify-between text-black">
-    <div>
+<div class="invoice-sheet bg-white border border-slate-300 shadow-xl w-full max-w-[8.27in] mx-auto p-6 flex flex-col justify-between text-black" style="min-height: 270mm;">
+    <div class="invoice-content">
         {{-- MARSS Corporation Brand Header --}}
         <div class="flex items-start justify-between gap-3 pb-3">
             <div class="flex items-center gap-2.5">

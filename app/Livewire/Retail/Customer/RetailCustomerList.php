@@ -3,27 +3,26 @@
 namespace App\Livewire\Retail\Customer;
 
 use App\Models\Retail\RetailCustomer;
-use App\Models\Shared\District;
-use App\Models\Shared\Location;
-use App\Models\Shared\Thana;
-use App\Models\Shared\Upazila;
 use App\Services\Shared\ActivityLogger;
+use App\Services\Shared\SafeImageUploadService;
 use App\Support\Money;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
-#[Title('Retail Customers')]
+#[Title('Customer List')]
 class RetailCustomerList extends Component
 {
-    use WithPagination;
+    use WithFileUploads, WithPagination;
 
     public string $search = '';
 
     public int $perPage = 15;
 
+    // Create / Edit Modal
     public bool $showModal = false;
 
     public ?int $editingId = null;
@@ -40,29 +39,46 @@ class RetailCustomerList extends Component
 
     public string $previous_due_amount = '0';
 
-    public ?int $district_id = null;
+    public $photo;
 
-    public ?int $upazila_id = null;
+    public ?string $existingImage = null;
 
-    public ?int $thana_id = null;
+    // Custom Delete Confirmation Modal
+    public bool $showDeleteModal = false;
 
-    public ?int $location_id = null;
+    public ?int $deleteTargetId = null;
+
+    public string $deleteTargetName = '';
+
+    // Image Quick View Modal
+    public bool $showImageModal = false;
+
+    public string $imageModalUrl = '';
+
+    public string $imageModalTitle = '';
 
     public function updatingSearch(): void
     {
         $this->resetPage();
     }
 
+    public function updatingPerPage(): void
+    {
+        $this->resetPage();
+    }
+
     public function openCreate(): void
     {
-        $this->reset(['editingId', 'customer_name', 'mobile', 'email', 'nid', 'address_details', 'district_id', 'upazila_id', 'thana_id', 'location_id']);
-        $this->previous_due_amount = '0';
+        $this->reset(['editingId', 'customer_name', 'mobile', 'email', 'nid', 'address_details', 'photo', 'existingImage']);
+        $this->previous_due_amount = '0.00';
+        $this->resetValidation();
         $this->showModal = true;
     }
 
     public function openEdit(int $id): void
     {
         $c = RetailCustomer::findOrFail($id);
+        $this->resetValidation();
         $this->editingId = $c->id;
         $this->customer_name = (string) $c->customer_name;
         $this->mobile = (string) ($c->mobile ?? '');
@@ -70,45 +86,71 @@ class RetailCustomerList extends Component
         $this->nid = (string) ($c->nid ?? '');
         $this->address_details = (string) ($c->address_details ?? '');
         $this->previous_due_amount = Money::round($c->previous_due_amount ?? 0);
-        $this->district_id = $c->district_id;
-        $this->upazila_id = $c->upazila_id;
-        $this->thana_id = $c->thana_id;
-        $this->location_id = $c->location_id;
+        $this->photo = null;
+        $this->existingImage = $c->img_url ?: null;
         $this->showModal = true;
     }
 
-    public function save(): void
+    public function save(SafeImageUploadService $uploads): void
     {
         $this->validate([
             'customer_name' => ['required', 'string', 'max:150'],
-            'mobile' => ['nullable', 'string', 'max:30'],
+            'mobile' => ['required', 'string', 'max:50'],
+            'email' => ['nullable', 'string', 'max:150'],
+            'nid' => ['nullable', 'string', 'max:50'],
             'previous_due_amount' => ['nullable', 'numeric', 'min:0'],
+            'photo' => ['nullable', 'image', 'max:5120'],
         ]);
 
-        $data = [
-            'customer_name' => trim($this->customer_name),
-            'mobile' => trim($this->mobile),
-            'email' => trim($this->email),
-            'nid' => trim($this->nid),
-            'address_details' => trim($this->address_details),
-            'previous_due_amount' => Money::round($this->previous_due_amount ?: 0),
-            'district_id' => $this->district_id,
-            'upazila_id' => $this->upazila_id,
-            'thana_id' => $this->thana_id,
-            'location_id' => $this->location_id,
-            'user_id' => Auth::id(),
-        ];
+        try {
+            $data = [
+                'customer_name' => trim($this->customer_name),
+                'mobile' => trim($this->mobile),
+                'email' => trim($this->email),
+                'nid' => trim($this->nid),
+                'address_details' => trim($this->address_details),
+                'previous_due_amount' => Money::round($this->previous_due_amount ?: 0),
+                'user_id' => Auth::id(),
+            ];
 
-        if (! $this->editingId) {
-            $max = (int) (RetailCustomer::max('id') ?? 0);
-            $data['customer_id'] = '#CusID'.str_pad((string) ($max + 1), 5, '0', STR_PAD_LEFT);
-            $data['date'] = Carbon::today()->toDateString();
+            if ($this->photo) {
+                $data['img_url'] = $uploads->store($this->photo, 'customers', $this->existingImage);
+            }
+
+            if (! $this->editingId) {
+                $max = (int) (RetailCustomer::max('id') ?? 0);
+                $data['customer_id'] = 'CUST-' . str_pad((string) ($max + 1), 4, '0', STR_PAD_LEFT);
+                $data['date'] = Carbon::today()->toDateString();
+            }
+
+            $customer = RetailCustomer::updateOrCreate(['id' => $this->editingId], $data);
+            ActivityLogger::log($this->editingId ? 'Update' : 'Create', 'Retail / Customer', "Saved Retail customer '{$customer->customer_name}'.");
+            $this->photo = null;
+            $this->existingImage = null;
+            $this->showModal = false;
+            $this->dispatch('toast', type: 'success', message: "Customer '{$customer->customer_name}' saved!");
+        } catch (\Throwable $e) {
+            $this->dispatch('toast', type: 'error', message: $e->getMessage());
         }
+    }
 
-        $customer = RetailCustomer::updateOrCreate(['id' => $this->editingId], $data);
-        ActivityLogger::log($this->editingId ? 'Update' : 'Create', 'Retail / Customer', "Saved Retail customer '{$customer->customer_name}'.");
-        $this->showModal = false;
-        $this->dispatch('toast', type: 'success', message: "Customer '{$customer->customer_name}' saved!");
+    public function confirmDelete(int $id): void
+    {
+        $c = RetailCustomer::findOrFail($id);
+        $this->deleteTargetId = $c->id;
+        $this->deleteTargetName = (string) $c->customer_name;
+        $this->showDeleteModal = true;
+    }
+
+    public function executeDelete(): void
+    {
+        if (! $this->deleteTargetId) {
+            return;
+        }
+        $id = $this->deleteTargetId;
+        $this->showDeleteModal = false;
+        $this->deleteTargetId = null;
+        $this->delete($id);
     }
 
     public function delete(int $id): void
@@ -123,25 +165,39 @@ class RetailCustomerList extends Component
         $this->dispatch('toast', type: 'success', message: 'Customer deleted.');
     }
 
+    public function openImageModal(string $url, string $title = 'Customer Photo'): void
+    {
+        $this->imageModalUrl = $url;
+        $this->imageModalTitle = $title;
+        $this->showImageModal = true;
+    }
+
     public function closeModal(): void
     {
         $this->showModal = false;
+        $this->showDeleteModal = false;
+        $this->showImageModal = false;
     }
 
     public function render()
     {
         $query = RetailCustomer::withSum('orders', 'due_amount')->orderByDesc('id');
         if (trim($this->search) !== '') {
-            $t = '%'.trim($this->search).'%';
-            $query->where(fn ($q) => $q->where('customer_name', 'like', $t)->orWhere('mobile', 'like', $t)->orWhere('customer_id', 'like', $t)->orWhere('address_details', 'like', $t));
+            $t = '%' . trim($this->search) . '%';
+            $query->where(fn ($q) => $q
+                ->where('customer_name', 'like', $t)
+                ->orWhere('mobile', 'like', $t)
+                ->orWhere('customer_id', 'like', $t)
+                ->orWhere('address_details', 'like', $t)
+            );
         }
+
+        $allMatching = (clone $query)->get(['id', 'previous_due_amount']);
+        $totalDueSum = Money::sum($allMatching->map(fn ($c) => Money::add($c->previous_due_amount ?? 0, $c->orders_sum_due_amount ?? 0)));
 
         return view('livewire.retail.customer.retail-customer-list', [
             'customers' => $query->paginate($this->perPage),
-            'districts' => $this->showModal ? District::orderBy('district_name')->get() : collect(),
-            'upazilas' => $this->showModal && $this->district_id ? Upazila::where('district_id', $this->district_id)->orderBy('upazila_name')->get() : collect(),
-            'thanas' => $this->showModal && $this->district_id ? Thana::where('district_id', $this->district_id)->orderBy('Thana_name')->get() : collect(),
-            'locations' => $this->showModal ? Location::orderBy('name')->get() : collect(),
+            'totalDueSum' => $totalDueSum,
         ]);
     }
 }

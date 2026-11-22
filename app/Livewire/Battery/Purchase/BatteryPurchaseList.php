@@ -2,22 +2,31 @@
 
 namespace App\Livewire\Battery\Purchase;
 
+use App\Models\Battery\BatteryBrand;
+use App\Models\Battery\BatteryCategory;
 use App\Models\Battery\BatteryProduct;
 use App\Models\Battery\BatteryPurchase;
+use App\Models\Battery\BatteryPurchaseReturn;
+use App\Models\Battery\BatterySubCategory;
 use App\Models\Battery\BatterySupplier;
+use App\Models\Battery\BatteryUnit;
+use App\Services\Battery\BatteryDueCollectionService;
 use App\Services\Battery\BatteryPurchaseService;
+use App\Services\Battery\BatteryReturnService;
+use App\Services\Shared\SafeImageUploadService;
 use App\Support\DateFilter;
 use App\Support\Money;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
-#[Title('Battery Purchases')]
+#[Title('Battery Purchase List')]
 class BatteryPurchaseList extends Component
 {
-    use WithPagination;
+    use WithFileUploads, WithPagination;
 
     public string $search = '';
 
@@ -25,11 +34,20 @@ class BatteryPurchaseList extends Component
 
     public string $endDate = '';
 
+    public string $dateFilter = 'all';
+
+    public int $perPage = 15;
+
+    // Create / Edit Modal
     public bool $showFormModal = false;
 
     public ?int $editingId = null;
 
     public ?int $supplier_id = null;
+
+    public string $supplierSearch = '';
+
+    public string $supplierPayableBalance = '0.00';
 
     public string $date = '';
 
@@ -43,14 +61,95 @@ class BatteryPurchaseList extends Component
 
     public string $paid_amount = '0';
 
-    public string $payment_method = 'Cash';
+    public string $payment_method = '';
+
+    public string $payment_number = '';
+
+    public string $transaction_id = '';
+
+    public string $bank_name = '';
+
+    public string $bank_account = '';
+
+    public string $productSearch = '';
 
     public string $addProductId = '';
 
+    public $attachment;
+
     public bool $hasMultiplePayments = false;
 
+    /** @var array<int, array{product_id: int, product_name: string, barcodes: list<string>, quantity: int, cost_price: string}> */
     public array $items = [];
 
+    // Inline Quick Create Supplier Sub-Modal
+    public bool $showQuickSupplierModal = false;
+
+    public string $newSupName = '';
+
+    public string $newSupCompany = '';
+
+    public string $newSupMobile = '';
+
+    public string $newSupAddress = '';
+
+    public string $newSupEmail = '';
+
+    public string $newSupStatus = 'active';
+
+    public string $newSupPayable = '0';
+
+    public $newSupImage;
+
+    // Inline Quick Create Product Sub-Modal
+    public bool $showQuickProductModal = false;
+
+    public string $newProdName = '';
+
+    public string $newProdCode = '';
+
+    public ?int $newProdBrandId = null;
+
+    public ?int $newProdCategoryId = null;
+
+    public ?int $newProdSubCategoryId = null;
+
+    public ?int $newProdUnitId = null;
+
+    public string $newProdQty = '0';
+
+    public string $newProdCost = '0';
+
+    public string $newProdSell = '0';
+
+    public $newProdImage;
+
+    // Nested Quick Create Brand / Category / Sub-Category (Inside Quick Product Modal)
+    public bool $showQuickBrandModal = false;
+
+    public string $quickBrandName = '';
+
+    public string $quickBrandStatus = 'active';
+
+    public $quickBrandLogo;
+
+    public bool $showQuickCategoryModal = false;
+
+    public string $quickCategoryName = '';
+
+    public string $quickCategoryStatus = 'active';
+
+    public $quickCategoryImage;
+
+    public bool $showQuickSubCategoryModal = false;
+
+    public ?int $quickSubCategoryParentId = null;
+
+    public string $quickSubCategoryName = '';
+
+    public string $quickSubCategoryStatus = 'active';
+
+    // Direct Payment Modal
     public bool $showPayModal = false;
 
     public ?int $payPurchaseId = null;
@@ -67,64 +166,300 @@ class BatteryPurchaseList extends Component
 
     public string $payDate = '';
 
+    // Purchase Return Modal
+    public bool $showReturnModal = false;
+
+    public ?int $returnPurchaseId = null;
+
+    public string $returnPurchaseCode = '';
+
+    public string $returnSupplierName = '';
+
+    public string $returnDate = '';
+
+    /** @var array<int, array{detail_id: int, product_name: string, bought_qty: int, returned_qty: int, available: int, cost_price: string, return_qty: int}> */
+    public array $returnItems = [];
+
+    // Split Invoice Modal
     public bool $showSplitModal = false;
 
     public ?int $splitPurchaseId = null;
 
     public string $splitPurchaseCode = '';
 
-    public array $splitDetails = [];
+    public string $splitSupplierName = '';
 
-    public array $splitSelectedIds = [];
+    public string $splitSourceSubtotal = '0.00';
+
+    public string $splitSourcePaid = '0.00';
+
+    public string $splitSourceDue = '0.00';
+
+    public string $splitSourceDelivery = '0.00';
+
+    public string $splitSourceReturnAdj = '0.00';
+
+    public string $splitSourceDiscountType = 'fixed';
+
+    public string $splitSourceDiscountValue = '0';
+
+    public string $splitSourceDiscountAmount = '0.00';
+
+    public bool $splitCustomSourceDiscount = false;
+
+    public string $splitNewRefNo = '';
+
+    public string $splitNewDiscountType = 'fixed';
 
     public string $splitNewDiscount = '0';
 
+    /** @var array<int, array{id: int, product_name: string, quantity: int, cost_price: string, subtotal: string, return_quantity: int}> */
+    public array $splitDetails = [];
+
+    /** @var list<int> */
+    public array $splitSelectedIds = [];
+
+    // Custom Delete Confirmation Modal
+    public bool $showDeleteModal = false;
+
+    public ?int $deleteTargetId = null;
+
+    public string $deleteTargetLabel = '';
+
+    // Image Quick View Modal
+    public bool $showImageModal = false;
+
+    public string $imageModalUrl = '';
+
+    public string $imageModalTitle = '';
+
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingPerPage(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingStartDate(): void
+    {
+        $this->dateFilter = 'custom';
+        $this->resetPage();
+    }
+
+    public function updatingEndDate(): void
+    {
+        $this->dateFilter = 'custom';
+        $this->resetPage();
+    }
+
+    public function applyDateFilter(string $filter): void
+    {
+        $this->dateFilter = $filter;
+        $today = Carbon::today();
+
+        if ($filter === 'today') {
+            $this->startDate = $today->toDateString();
+            $this->endDate = $today->toDateString();
+        } elseif ($filter === '7') {
+            $this->startDate = $today->copy()->subDays(7)->toDateString();
+            $this->endDate = $today->toDateString();
+        } elseif ($filter === '30') {
+            $this->startDate = $today->copy()->subDays(30)->toDateString();
+            $this->endDate = $today->toDateString();
+        } elseif ($filter === '365') {
+            $this->startDate = $today->copy()->subYear()->toDateString();
+            $this->endDate = $today->toDateString();
+        } else {
+            $this->dateFilter = 'all';
+            $this->startDate = '';
+            $this->endDate = '';
+        }
+
+        $this->resetPage();
+    }
+
     public function openCreate(): void
     {
-        $this->reset(['editingId', 'supplier_id', 'referance_no', 'addProductId', 'items', 'hasMultiplePayments']);
+        $this->resetFormState();
+        $this->showFormModal = true;
+    }
+
+    public function resetFormState(): void
+    {
+        $this->reset([
+            'editingId', 'supplier_id', 'supplierSearch', 'referance_no',
+            'addProductId', 'productSearch', 'attachment', 'items', 'hasMultiplePayments',
+            'payment_number', 'transaction_id', 'bank_name', 'bank_account',
+        ]);
+        $this->supplierPayableBalance = '0.00';
         $this->date = Carbon::today()->toDateString();
         $this->discount_type = 'fixed';
         $this->discount_value = '0';
         $this->delivery_charge = '0';
         $this->paid_amount = '0';
-        $this->payment_method = 'Cash';
-        $this->showFormModal = true;
+        $this->payment_method = '';
+        $this->resetValidation();
     }
 
-    public function openEdit(int $id): void
+    public function restoreHeldDraft(array $draft): void
     {
-        $p = BatteryPurchase::with(['orderDetails.product', 'paymentDetails'])->findOrFail($id);
+        $this->resetFormState();
+        $this->supplier_id = ! empty($draft['supplier_id']) ? (int) $draft['supplier_id'] : null;
+        $this->supplierSearch = (string) ($draft['supplierSearch'] ?? '');
+        $this->supplierPayableBalance = (string) ($draft['supplierPayableBalance'] ?? '0.00');
+        $this->referance_no = (string) ($draft['referance_no'] ?? '');
+        $this->date = ! empty($draft['date']) ? (string) $draft['date'] : Carbon::today()->toDateString();
+        $this->discount_type = ($draft['discount_type'] ?? 'fixed') === 'percent' ? 'percent' : 'fixed';
+        $this->discount_value = (string) ($draft['discount_value'] ?? '0');
+        $this->delivery_charge = (string) ($draft['delivery_charge'] ?? '0');
+        $this->paid_amount = (string) ($draft['paid_amount'] ?? '0');
+        $this->payment_method = (string) ($draft['payment_method'] ?? '');
+        $this->payment_number = (string) ($draft['payment_number'] ?? '');
+        $this->transaction_id = (string) ($draft['transaction_id'] ?? '');
+        $this->bank_name = (string) ($draft['bank_name'] ?? '');
+        $this->bank_account = (string) ($draft['bank_account'] ?? '');
+        if (! empty($draft['items']) && is_array($draft['items'])) {
+            $this->items = array_values($draft['items']);
+        }
+        $this->dispatch('toast', type: 'success', message: 'Held purchase draft restored!');
+    }
+
+    public function openEdit(int $id, BatteryDueCollectionService $dueService): void
+    {
+        $p = BatteryPurchase::with(['supplier', 'orderDetails.product', 'paymentDetails'])->findOrFail($id);
+        $this->resetValidation();
         $this->editingId = $p->id;
         $this->supplier_id = $p->supplier_id;
+        $this->supplierSearch = $p->supplier ? ($p->supplier->name . ($p->supplier->mobile ? ' (' . $p->supplier->mobile . ')' : '')) : '';
+        $bal = $p->supplier_id ? $dueService->supplierBalance((int) $p->supplier_id) : ['total_due' => '0.00'];
+        $this->supplierPayableBalance = Money::round($bal['total_due'] ?? 0);
         $this->date = Carbon::parse($p->date ?? now())->toDateString();
         $this->referance_no = (string) ($p->referance_no ?? '');
         $this->discount_type = $p->discount_type === 'percent' ? 'percent' : 'fixed';
-        $this->discount_value = $this->discount_type === 'percent' ? (string) ($p->discount_rate ?? 0) : Money::round($p->discount_amount ?? 0);
+        $this->discount_value = $this->discount_type === 'percent'
+            ? (string) ($p->discount_rate ?? 0)
+            : Money::round($p->discount_amount ?? 0);
         $this->delivery_charge = Money::round($p->delivery_charge ?? 0);
         $this->paid_amount = Money::round($p->paid_amount ?? 0);
+        $firstPay = $p->paymentDetails->first();
+        $this->payment_method = (string) ($firstPay?->payment_method ?? '');
+        $this->transaction_id = (string) ($firstPay?->transaction_id ?? '');
+        $this->payment_number = '';
+        $this->bank_name = '';
+        $this->bank_account = '';
         $this->hasMultiplePayments = $p->paymentDetails->count() > 1;
+        $this->attachment = null;
+        $this->productSearch = '';
         $this->items = $p->orderDetails->map(fn ($d) => [
             'product_id' => (int) $d->product_id,
             'product_name' => (string) ($d->product?->product_name ?? "#{$d->product_id}"),
+            'barcodes' => $d->product ? $d->product->decodedCodes() : [],
             'quantity' => (int) round((float) $d->quantity),
             'cost_price' => Money::round($d->cost_price ?? 0),
         ])->values()->all();
         $this->showFormModal = true;
     }
 
-    public function addItem(): void
+    public function selectSupplier(int $supplierId, BatteryDueCollectionService $dueService): void
     {
-        $pr = BatteryProduct::find((int) $this->addProductId);
-        if (! $pr) {
+        $sup = BatterySupplier::find($supplierId);
+        if (! $sup) {
             return;
         }
-        $this->items[] = [
-            'product_id' => $pr->id,
-            'product_name' => (string) $pr->product_name,
-            'quantity' => 1,
-            'cost_price' => Money::round($pr->cost_price ?? 0),
-        ];
+        $this->supplier_id = $sup->id;
+        $this->supplierSearch = $sup->name . ($sup->mobile ? " ({$sup->mobile})" : '');
+        $bal = $dueService->supplierBalance($sup->id);
+        $this->supplierPayableBalance = Money::round($bal['total_due'] ?? 0);
+    }
+
+    public function addProductById(int $productId): void
+    {
+        $prod = BatteryProduct::find($productId);
+        if (! $prod) {
+            return;
+        }
+        $this->appendOrIncrementProduct($prod);
+        $this->productSearch = '';
         $this->addProductId = '';
+    }
+
+    public function addItem(): void
+    {
+        if (! $this->addProductId) {
+            return;
+        }
+        $this->addProductById((int) $this->addProductId);
+    }
+
+    public function scanOrSearchProduct(?string $code = null): void
+    {
+        $term = trim($code ?? $this->productSearch);
+        if ($term === '') {
+            return;
+        }
+
+        $candidates = BatteryProduct::where('product_code', 'like', '%' . $term . '%')
+            ->orWhere('product_name', 'like', '%' . $term . '%')
+            ->limit(25)
+            ->get();
+
+        $exact = $candidates->first(function (BatteryProduct $p) use ($term) {
+            foreach ($p->decodedCodes() as $c) {
+                if (strcasecmp($c, $term) === 0) {
+                    return true;
+                }
+            }
+
+            return strcasecmp((string) $p->product_name, $term) === 0;
+        });
+
+        $chosen = $exact ?? ($candidates->count() === 1 ? $candidates->first() : null);
+
+        if ($chosen) {
+            $this->appendOrIncrementProduct($chosen);
+            $this->productSearch = '';
+            $this->dispatch('toast', type: 'success', message: "Added: {$chosen->product_name}");
+        } else {
+            $this->dispatch('toast', type: 'error', message: "No exact battery product found for '{$term}'.");
+        }
+    }
+
+    private function appendOrIncrementProduct(BatteryProduct $prod): void
+    {
+        foreach ($this->items as $idx => $item) {
+            if ((int) $item['product_id'] === $prod->id) {
+                $this->items[$idx]['quantity'] = ((int) $this->items[$idx]['quantity']) + 1;
+
+                return;
+            }
+        }
+
+        $this->items[] = [
+            'product_id' => $prod->id,
+            'product_name' => (string) $prod->product_name,
+            'barcodes' => $prod->decodedCodes(),
+            'quantity' => 1,
+            'cost_price' => Money::round($prod->cost_price ?? 0),
+        ];
+    }
+
+    public function incrementItemQty(int $idx): void
+    {
+        if (! isset($this->items[$idx])) {
+            return;
+        }
+        $this->items[$idx]['quantity'] = max(1, ((int) $this->items[$idx]['quantity']) + 1);
+    }
+
+    public function decrementItemQty(int $idx): void
+    {
+        if (! isset($this->items[$idx])) {
+            return;
+        }
+        $this->items[$idx]['quantity'] = max(1, ((int) $this->items[$idx]['quantity']) - 1);
     }
 
     public function removeItem(int $idx): void
@@ -133,29 +468,297 @@ class BatteryPurchaseList extends Component
         $this->items = array_values($this->items);
     }
 
-    public function savePurchase(BatteryPurchaseService $service): void
+    // Inline Quick Create Supplier
+    public function openQuickSupplier(): void
     {
-        $this->validate(['supplier_id' => ['required', 'integer', 'exists:battery_suppliers,id'], 'date' => ['required', 'date']]);
+        $this->reset(['newSupName', 'newSupCompany', 'newSupMobile', 'newSupAddress', 'newSupEmail', 'newSupImage']);
+        $this->newSupStatus = 'active';
+        $this->newSupPayable = '';
+        $this->resetValidation();
+        $this->showQuickSupplierModal = true;
+    }
+
+    public function saveQuickSupplier(BatteryDueCollectionService $dueService, SafeImageUploadService $uploads): void
+    {
+        $this->validate([
+            'newSupName' => ['required', 'string', 'max:255'],
+            'newSupMobile' => ['required', 'string', 'max:30'],
+            'newSupPayable' => ['nullable', 'numeric', 'min:0'],
+            'newSupImage' => ['nullable', 'image', 'max:1024'],
+        ]);
+
+        $imgPath = $this->newSupImage ? $uploads->store($this->newSupImage, 'battery_suppliers') : null;
+        $lastId = (int) (BatterySupplier::max('id') ?? 0);
+        $supCode = 'BSUP-' . str_pad((string) ($lastId + 10001), 5, '0', STR_PAD_LEFT);
+
+        $sup = BatterySupplier::create([
+            'supplier_id' => $supCode,
+            'name' => trim($this->newSupName),
+            'company' => trim($this->newSupCompany) ?: null,
+            'mobile' => trim($this->newSupMobile) ?: null,
+            'address' => trim($this->newSupAddress) ?: null,
+            'img_url' => $imgPath,
+            'purchase_payable_amount' => Money::maxZero($this->newSupPayable ?: 0),
+            'user_id' => (int) Auth::id(),
+        ]);
+
+        $this->showQuickSupplierModal = false;
+        $this->selectSupplier($sup->id, $dueService);
+        $this->dispatch('toast', type: 'success', message: "Supplier '{$sup->name}' created & selected!");
+    }
+
+    // Inline Quick Create Product
+    public function openQuickProduct(): void
+    {
+        $this->reset(['newProdName', 'newProdCode', 'newProdBrandId', 'newProdCategoryId', 'newProdSubCategoryId', 'newProdUnitId', 'newProdImage']);
+        $this->newProdQty = '0';
+        $this->newProdCost = '0';
+        $this->newProdSell = '0';
+        $this->resetValidation();
+        $this->showQuickProductModal = true;
+    }
+
+    public function resetQuickProductForm(): void
+    {
+        $this->reset(['newProdName', 'newProdCode', 'newProdBrandId', 'newProdCategoryId', 'newProdSubCategoryId', 'newProdUnitId', 'newProdImage']);
+        $this->newProdQty = '0';
+        $this->newProdCost = '0';
+        $this->newProdSell = '0';
+        $this->resetValidation();
+    }
+
+    public function saveQuickProduct(SafeImageUploadService $uploads): void
+    {
+        $this->validate([
+            'newProdName' => ['required', 'string', 'max:255'],
+            'newProdCategoryId' => ['nullable', 'integer'],
+            'newProdQty' => ['nullable', 'numeric', 'min:0'],
+            'newProdCost' => ['nullable', 'numeric', 'min:0'],
+            'newProdSell' => ['nullable', 'numeric', 'min:0'],
+            'newProdImage' => ['nullable', 'image', 'max:1024'],
+        ]);
+
+        $imgPath = $this->newProdImage ? $uploads->store($this->newProdImage, 'battery_products') : null;
+        $code = trim($this->newProdCode) ?: ('BMARSS-' . random_int(100000, 999999));
+
+        $prod = BatteryProduct::create([
+            'product_name' => trim($this->newProdName),
+            'product_code' => [$code],
+            'img_url' => $imgPath,
+            'brand_id' => $this->newProdBrandId ?: null,
+            'category_id' => $this->newProdCategoryId ?: null,
+            'sub_category_id' => $this->newProdSubCategoryId ?: null,
+            'unit_id' => $this->newProdUnitId ?: null,
+            'quantity' => max(0, (int) round((float) ($this->newProdQty ?: 0))),
+            'cost_price' => Money::maxZero($this->newProdCost ?: 0),
+            'sell_price' => Money::maxZero($this->newProdSell ?: 0),
+            'status' => 1,
+            'user_id' => (int) Auth::id(),
+        ]);
+
+        $this->showQuickProductModal = false;
+        $this->appendOrIncrementProduct($prod);
+        $this->dispatch('toast', type: 'success', message: "Product '{$prod->product_name}' created & added to cart!");
+    }
+
+    public function updatedNewProdCategoryId(): void
+    {
+        $this->newProdSubCategoryId = null;
+    }
+
+    public function openQuickBrand(): void
+    {
+        $this->reset(['quickBrandName', 'quickBrandLogo']);
+        $this->quickBrandStatus = 'active';
+        $this->resetValidation();
+        $this->showQuickBrandModal = true;
+    }
+
+    public function saveQuickBrand(SafeImageUploadService $uploads): void
+    {
+        $this->validate([
+            'quickBrandName' => ['required', 'string', 'max:150'],
+            'quickBrandLogo' => ['nullable', 'image', 'max:2048'],
+        ]);
+        $imgPath = $this->quickBrandLogo ? $uploads->store($this->quickBrandLogo, 'battery-brands') : null;
+        $brand = BatteryBrand::create([
+            'name' => trim($this->quickBrandName),
+            'img_url' => $imgPath,
+            'user_id' => (int) Auth::id(),
+        ]);
+        $this->newProdBrandId = $brand->id;
+        $this->reset(['quickBrandName', 'quickBrandLogo']);
+        $this->quickBrandStatus = 'active';
+        $this->showQuickBrandModal = false;
+        $this->dispatch('toast', type: 'success', message: "Brand '{$brand->name}' created!");
+    }
+
+    public function openQuickCategory(): void
+    {
+        $this->reset(['quickCategoryName', 'quickCategoryImage']);
+        $this->quickCategoryStatus = 'active';
+        $this->resetValidation();
+        $this->showQuickCategoryModal = true;
+    }
+
+    public function saveQuickCategory(SafeImageUploadService $uploads): void
+    {
+        $this->validate([
+            'quickCategoryName' => ['required', 'string', 'max:150'],
+            'quickCategoryImage' => ['nullable', 'image', 'max:2048'],
+        ]);
+        $imgPath = $this->quickCategoryImage ? $uploads->store($this->quickCategoryImage, 'battery-categories') : null;
+        $cat = BatteryCategory::create([
+            'name' => trim($this->quickCategoryName),
+            'img_url' => $imgPath,
+            'user_id' => (int) Auth::id(),
+        ]);
+        $this->newProdCategoryId = $cat->id;
+        $this->newProdSubCategoryId = null;
+        $this->reset(['quickCategoryName', 'quickCategoryImage']);
+        $this->quickCategoryStatus = 'active';
+        $this->showQuickCategoryModal = false;
+        $this->dispatch('toast', type: 'success', message: "Category '{$cat->name}' created!");
+    }
+
+    public function openQuickSubCategory(): void
+    {
+        $this->reset(['quickSubCategoryName']);
+        $this->quickSubCategoryParentId = $this->newProdCategoryId;
+        $this->quickSubCategoryStatus = 'active';
+        $this->resetValidation();
+        $this->showQuickSubCategoryModal = true;
+    }
+
+    public function saveQuickSubCategory(): void
+    {
+        $this->validate([
+            'quickSubCategoryParentId' => ['required', 'integer'],
+            'quickSubCategoryName' => ['required', 'string', 'max:150'],
+        ], [
+            'quickSubCategoryParentId.required' => 'Please select a Category.',
+        ]);
+        $sub = BatterySubCategory::create([
+            'category_id' => $this->quickSubCategoryParentId,
+            'name' => trim($this->quickSubCategoryName),
+            'user_id' => (int) Auth::id(),
+        ]);
+        $this->newProdCategoryId = $this->quickSubCategoryParentId;
+        $this->newProdSubCategoryId = $sub->id;
+        $this->reset(['quickSubCategoryName']);
+        $this->showQuickSubCategoryModal = false;
+        $this->dispatch('toast', type: 'success', message: "Sub-Category '{$sub->name}' created!");
+    }
+
+    public function savePurchase(BatteryPurchaseService $service, SafeImageUploadService $uploads): void
+    {
+        $this->validate([
+            'supplier_id' => ['required', 'integer', 'exists:battery_suppliers,id'],
+            'date' => ['required', 'date'],
+            'attachment' => ['nullable', 'file', 'max:5120'],
+        ]);
+
         try {
+            $attachPath = null;
+            if ($this->attachment) {
+                $attachPath = $uploads->store($this->attachment, 'battery_purchases', null, true);
+            }
+
+            $trxParts = array_filter([
+                trim($this->transaction_id),
+                trim($this->payment_number) ? 'No: ' . trim($this->payment_number) : '',
+                trim($this->bank_name) ? 'Bank: ' . trim($this->bank_name) : '',
+                trim($this->bank_account) ? 'A/C: ' . trim($this->bank_account) : '',
+            ]);
+
             $payload = [
                 'supplier_id' => $this->supplier_id,
                 'date' => $this->date,
                 'referance_no' => $this->referance_no ?: null,
-                'delivery_charge' => $this->delivery_charge,
+                'delivery_charge' => $this->delivery_charge ?: '0',
                 'discount_type' => $this->discount_type,
-                'discount_rate' => $this->discount_type === 'percent' ? $this->discount_value : null,
-                'discount_amount' => $this->discount_type === 'fixed' ? $this->discount_value : null,
-                'payment_method' => $this->payment_method,
+                'discount_rate' => $this->discount_type === 'percent' ? ($this->discount_value ?: '0') : null,
+                'discount_amount' => $this->discount_type === 'fixed' ? ($this->discount_value ?: '0') : null,
+                'payment_method' => $this->payment_method ?: 'Cash',
+                'transaction_id' => ! empty($trxParts) ? implode(' | ', $trxParts) : null,
                 'items' => $this->items,
             ];
-            if (! $this->editingId || ! $this->hasMultiplePayments) {
-                $payload['paid_amount'] = $this->paid_amount;
+            if ($attachPath) {
+                $payload['attach_document'] = $attachPath;
             }
-            $p = $this->editingId
-                ? $service->update($this->editingId, $payload, (int) Auth::id())
-                : $service->create($payload, (int) Auth::id());
+            if (! $this->editingId || ! $this->hasMultiplePayments) {
+                $payload['paid_amount'] = $this->paid_amount ?: '0';
+            }
+
+            if ($this->editingId) {
+                $p = $service->update($this->editingId, $payload, (int) Auth::id());
+                $msg = "Battery purchase {$p->purchase_id} updated!";
+            } else {
+                $p = $service->create($payload, (int) Auth::id());
+                $msg = "Battery purchase {$p->purchase_id} created!";
+                $this->dispatch('battery-purchase-created');
+            }
+
             $this->showFormModal = false;
-            $this->dispatch('toast', type: 'success', message: "Battery purchase {$p->purchase_id} saved!");
+            $this->dispatch('toast', type: 'success', message: $msg);
+        } catch (\Throwable $e) {
+            $this->dispatch('toast', type: 'error', message: $e->getMessage());
+        }
+    }
+
+    // Purchase Return Modal
+    public function openReturn(int $purchaseId): void
+    {
+        $p = BatteryPurchase::with(['supplier', 'orderDetails.product'])->findOrFail($purchaseId);
+        $this->returnPurchaseId = $p->id;
+        $this->returnPurchaseCode = (string) $p->purchase_id;
+        $this->returnSupplierName = (string) ($p->supplier?->name ?? 'N/A');
+        $this->returnDate = Carbon::today()->toDateString();
+        $this->returnItems = $p->orderDetails->map(function ($d) {
+            $bought = (int) round((float) $d->quantity);
+            $returned = (int) ($d->return_quantity ?? 0);
+
+            return [
+                'detail_id' => (int) $d->id,
+                'product_name' => (string) ($d->product?->product_name ?? "Product #{$d->product_id}"),
+                'bought_qty' => $bought,
+                'returned_qty' => $returned,
+                'available' => max(0, $bought - $returned),
+                'cost_price' => Money::round($d->cost_price ?? 0),
+                'return_qty' => 0,
+            ];
+        })->values()->all();
+        $this->showReturnModal = true;
+    }
+
+    public function submitReturn(BatteryReturnService $returnService): void
+    {
+        $payload = [];
+        foreach ($this->returnItems as $row) {
+            $q = (int) ($row['return_qty'] ?? 0);
+            if ($q > 0) {
+                $payload[] = [
+                    'purchase_order_detail_id' => (int) $row['detail_id'],
+                    'quantity' => $q,
+                ];
+            }
+        }
+
+        if (empty($payload)) {
+            $this->dispatch('toast', type: 'error', message: 'Enter return quantity for at least one product.');
+
+            return;
+        }
+
+        try {
+            $returnService->createPurchaseReturn(
+                (int) $this->returnPurchaseId,
+                $payload,
+                $this->returnDate ?: Carbon::today()->toDateString(),
+                (int) Auth::id(),
+            );
+            $this->showReturnModal = false;
+            $this->dispatch('toast', type: 'success', message: "Purchase return processed for {$this->returnPurchaseCode}!");
         } catch (\Throwable $e) {
             $this->dispatch('toast', type: 'error', message: $e->getMessage());
         }
@@ -191,31 +794,101 @@ class BatteryPurchaseList extends Component
 
     public function openSplit(int $id): void
     {
-        $p = BatteryPurchase::with('orderDetails.product')->findOrFail($id);
+        $p = BatteryPurchase::with(['supplier', 'orderDetails.product', 'paymentDetails'])->findOrFail($id);
         $this->splitPurchaseId = $p->id;
         $this->splitPurchaseCode = (string) $p->purchase_id;
-        $this->splitSelectedIds = [];
+        $this->splitSupplierName = (string) ($p->supplier?->name ?? 'N/A');
+        $this->splitSourceSubtotal = Money::round($p->grand_subtotal ?? 0);
+        $this->splitSourcePaid = Money::round($p->paid_amount ?? 0);
+        $this->splitSourceDue = Money::round($p->due_amount ?? 0);
+        $this->splitSourceDelivery = Money::round($p->delivery_charge ?? 0);
+        $this->splitSourceReturnAdj = Money::round($p->return_adjustment_amount ?? 0);
+        $this->splitSourceDiscountType = $p->discount_type === 'percent' ? 'percent' : 'fixed';
+        $this->splitSourceDiscountValue = $this->splitSourceDiscountType === 'percent'
+            ? (string) ($p->discount_rate ?? 0)
+            : Money::round($p->discount_amount ?? 0);
+        $this->splitSourceDiscountAmount = Money::round($p->discount_amount ?? 0);
+        $this->splitCustomSourceDiscount = false;
+        $this->splitNewRefNo = $p->referance_no ? ($p->referance_no . '-SPLIT') : ('SPLIT-' . now()->format('YmdHis'));
+        $this->splitNewDiscountType = 'fixed';
         $this->splitNewDiscount = '0';
+        $this->splitSelectedIds = [];
         $this->splitDetails = $p->orderDetails->map(fn ($d) => [
-            'id' => $d->id,
+            'id' => (int) $d->id,
             'product_name' => (string) ($d->product?->product_name ?? "#{$d->product_id}"),
             'quantity' => (int) round((float) $d->quantity),
             'cost_price' => Money::round($d->cost_price ?? 0),
-            'subtotal' => Money::round($d->subtotal ?? 0),
+            'subtotal' => Money::round($d->subtotal ?? Money::mul($d->cost_price ?? 0, $d->quantity ?? 0)),
             'return_quantity' => (int) ($d->return_quantity ?? 0),
         ])->values()->all();
         $this->showSplitModal = true;
     }
 
+    public function toggleSplitSelectAll(bool $checked): void
+    {
+        if (! $checked) {
+            $this->splitSelectedIds = [];
+
+            return;
+        }
+
+        $this->splitSelectedIds = collect($this->splitDetails)
+            ->filter(fn ($d) => (int) ($d['return_quantity'] ?? 0) === 0)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
     public function submitSplit(BatteryPurchaseService $service): void
     {
         try {
-            $newP = $service->splitInvoice((int) $this->splitPurchaseId, array_map('intval', $this->splitSelectedIds), ['new_discount_amount' => $this->splitNewDiscount], (int) Auth::id());
+            $options = [
+                'referance_no' => trim($this->splitNewRefNo) ?: null,
+                'new_discount_type' => $this->splitNewDiscountType,
+                'new_discount_rate' => $this->splitNewDiscountType === 'percent' ? $this->splitNewDiscount : null,
+                'new_discount_amount' => $this->splitNewDiscountType === 'fixed' ? $this->splitNewDiscount : null,
+            ];
+
+            if ($this->splitCustomSourceDiscount) {
+                $options['original_discount_type'] = $this->splitSourceDiscountType;
+                if ($this->splitSourceDiscountType === 'percent') {
+                    $options['original_discount_rate'] = $this->splitSourceDiscountValue;
+                } else {
+                    $options['original_discount_amount'] = $this->splitSourceDiscountValue;
+                }
+            }
+
+            $newP = $service->splitInvoice(
+                (int) $this->splitPurchaseId,
+                array_map('intval', $this->splitSelectedIds),
+                $options,
+                (int) Auth::id(),
+            );
             $this->showSplitModal = false;
             $this->dispatch('toast', type: 'success', message: "Split into {$newP->purchase_id}!");
         } catch (\Throwable $e) {
             $this->dispatch('toast', type: 'error', message: $e->getMessage());
         }
+    }
+
+    public function confirmDelete(int $purchaseId): void
+    {
+        $p = BatteryPurchase::findOrFail($purchaseId);
+        $this->deleteTargetId = $p->id;
+        $this->deleteTargetLabel = (string) ($p->purchase_id ?: "Purchase #{$p->id}");
+        $this->showDeleteModal = true;
+    }
+
+    public function executeDelete(BatteryPurchaseService $service): void
+    {
+        if (! $this->deleteTargetId) {
+            return;
+        }
+        $id = $this->deleteTargetId;
+        $this->showDeleteModal = false;
+        $this->deleteTargetId = null;
+        $this->deletePurchase($id, $service);
     }
 
     public function deletePurchase(int $id, BatteryPurchaseService $service): void
@@ -228,28 +901,170 @@ class BatteryPurchaseList extends Component
         }
     }
 
+    public function openImageModal(string $url, string $title = 'Document Preview'): void
+    {
+        $this->imageModalUrl = $url;
+        $this->imageModalTitle = $title;
+        $this->showImageModal = true;
+    }
+
     public function closeModals(): void
     {
         $this->showFormModal = false;
         $this->showPayModal = false;
         $this->showSplitModal = false;
+        $this->showReturnModal = false;
+        $this->showDeleteModal = false;
+        $this->showImageModal = false;
+        $this->showQuickSupplierModal = false;
+        $this->showQuickProductModal = false;
+        $this->showQuickBrandModal = false;
+        $this->showQuickCategoryModal = false;
+        $this->showQuickSubCategoryModal = false;
     }
 
     public function render()
     {
-        $query = BatteryPurchase::with(['supplier', 'orderDetails'])->orderByDesc('id');
+        $query = BatteryPurchase::with(['supplier', 'orderDetails.product', 'paymentDetails', 'purchaseReturns'])
+            ->orderByDesc('id');
+
         if (trim($this->search) !== '') {
-            $t = '%'.trim($this->search).'%';
-            $query->where(fn ($q) => $q->where('purchase_id', 'like', $t)->orWhereHas('supplier', fn ($sq) => $sq->where('name', 'like', $t)));
+            $t = '%' . trim($this->search) . '%';
+            $query->where(fn ($q) => $q
+                ->where('purchase_id', 'like', $t)
+                ->orWhere('referance_no', 'like', $t)
+                ->orWhereHas('supplier', fn ($sq) => $sq->where('name', 'like', $t)->orWhere('supplier_id', 'like', $t))
+                ->orWhereHas('orderDetails.product', fn ($pq) => $pq->where('product_code', 'like', $t)->orWhere('product_name', 'like', $t))
+            );
         }
+
         if ($this->startDate || $this->endDate) {
             DateFilter::applyDateFilter($query, 'date', $this->startDate ?: null, $this->endDate ?: null);
         }
 
+        $allIds = (clone $query)->pluck('id');
+        $totalsRow = (clone $query)->reorder()->selectRaw('
+            COALESCE(SUM(CAST(COALESCE(grand_subtotal, 0) AS DECIMAL(15,2)) + CAST(COALESCE(delivery_charge, 0) AS DECIMAL(15,2))), 0) as sum_grand,
+            COALESCE(SUM(CAST(COALESCE(paid_amount, 0) AS DECIMAL(15,2))), 0) as sum_paid,
+            COALESCE(SUM(CAST(COALESCE(due_amount, 0) AS DECIMAL(15,2))), 0) as sum_due
+        ')->first();
+
+        $totalReturnSum = $allIds->isNotEmpty()
+            ? Money::sum(BatteryPurchaseReturn::whereIn('purchase_id', $allIds)->pluck('amount'))
+            : '0.00';
+
+        $formQty = array_sum(array_map(fn ($i) => max(0, (int) ($i['quantity'] ?? 0)), $this->items));
+        $formSub = Money::sum(array_map(fn ($i) => Money::mul($i['cost_price'] ?? 0, max(0, (int) ($i['quantity'] ?? 0))), $this->items));
+        $formDelivery = Money::maxZero($this->delivery_charge ?: 0);
+        $formDiscAmount = $this->discount_type === 'percent'
+            ? Money::min(Money::percent($formSub, Money::maxZero($this->discount_value ?: 0)), $formSub)
+            : Money::min(Money::maxZero($this->discount_value ?: 0), $formSub);
+        $formNetPayable = Money::maxZero(Money::add(Money::sub($formSub, $formDiscAmount), $formDelivery));
+        $formPaid = Money::maxZero($this->paid_amount ?: 0);
+        $formDue = Money::maxZero(Money::sub($formNetPayable, $formPaid));
+        $formStatus = Money::cmp($formDue, 0) <= 0 ? 'Fully Paid' : (Money::cmp($formPaid, 0) > 0 ? 'Partial Paid' : 'Unpaid');
+
+        $filteredSuppliers = collect();
+        $filteredProducts = collect();
+        if ($this->showFormModal) {
+            $supQuery = BatterySupplier::orderBy('name');
+            $st = trim($this->supplierSearch);
+            if ($st !== '' && ! $this->supplier_id) {
+                $supQuery->where(fn ($q) => $q->where('name', 'like', "%{$st}%")->orWhere('mobile', 'like', "%{$st}%")->orWhere('supplier_id', 'like', "%{$st}%"));
+            }
+            $filteredSuppliers = $supQuery->limit(50)->get(['id', 'supplier_id', 'name', 'mobile', 'company']);
+
+            $pt = trim($this->productSearch);
+            if ($pt !== '') {
+                $filteredProducts = BatteryProduct::where(fn ($q) => $q->where('product_name', 'like', "%{$pt}%")->orWhere('product_code', 'like', "%{$pt}%"))
+                    ->orderBy('product_name')
+                    ->limit(25)
+                    ->get(['id', 'product_name', 'product_code', 'cost_price', 'quantity']);
+            }
+        }
+
+        $splitPreview = null;
+        if ($this->showSplitModal) {
+            $selIds = array_map('intval', $this->splitSelectedIds);
+            $newSub = '0.00';
+            $remSub = '0.00';
+            foreach ($this->splitDetails as $d) {
+                if (in_array((int) $d['id'], $selIds, true)) {
+                    $newSub = Money::add($newSub, $d['subtotal']);
+                } else {
+                    $remSub = Money::add($remSub, $d['subtotal']);
+                }
+            }
+            $newDisc = $this->splitNewDiscountType === 'percent'
+                ? Money::min(Money::percent($newSub, Money::maxZero($this->splitNewDiscount ?: 0)), $newSub)
+                : Money::min(Money::maxZero($this->splitNewDiscount ?: 0), $newSub);
+            $newNet = Money::maxZero(Money::sub($newSub, $newDisc));
+
+            if ($this->splitCustomSourceDiscount) {
+                $remDisc = $this->splitSourceDiscountType === 'percent'
+                    ? Money::min(Money::percent($remSub, Money::maxZero($this->splitSourceDiscountValue ?: 0)), $remSub)
+                    : Money::min(Money::maxZero($this->splitSourceDiscountValue ?: 0), $remSub);
+            } elseif ($this->splitSourceDiscountType === 'percent' && Money::cmp($this->splitSourceDiscountValue, 0) > 0) {
+                $remDisc = Money::min(Money::percent($remSub, Money::maxZero($this->splitSourceDiscountValue)), $remSub);
+            } else {
+                $ratio = Money::cmp($this->splitSourceSubtotal, 0) > 0 ? Money::div($remSub, $this->splitSourceSubtotal, 6) : '0';
+                $remDisc = Money::min(Money::mul($this->splitSourceDiscountAmount, $ratio), $remSub);
+            }
+
+            $remNet = Money::maxZero(Money::sub(Money::add(Money::sub($remSub, $remDisc), $this->splitSourceDelivery), $this->splitSourceReturnAdj));
+            $histPaid = Money::maxZero($this->splitSourcePaid);
+            $combined = Money::add($remNet, $newNet);
+            if (Money::cmp($combined, 0) <= 0) {
+                $newPaid = '0.00';
+                $remPaid = '0.00';
+            } elseif (Money::cmp($histPaid, $combined) >= 0) {
+                $newPaid = $newNet;
+                $remPaid = Money::add($remNet, Money::sub($histPaid, $combined));
+            } else {
+                $share = Money::div($newNet, $combined, 6);
+                $newPaid = Money::min(Money::mul($histPaid, $share), $newNet);
+                $remPaid = Money::maxZero(Money::sub($histPaid, $newPaid));
+            }
+
+            $splitPreview = [
+                'selected_count' => count($selIds),
+                'remaining_count' => count($this->splitDetails) - count($selIds),
+                'new_sub' => $newSub,
+                'new_disc' => $newDisc,
+                'new_net' => $newNet,
+                'new_paid' => $newPaid,
+                'new_due' => Money::maxZero(Money::sub($newNet, $newPaid)),
+                'rem_sub' => $remSub,
+                'rem_disc' => $remDisc,
+                'rem_net' => $remNet,
+                'rem_paid' => $remPaid,
+                'rem_due' => Money::maxZero(Money::sub($remNet, $remPaid)),
+                'hist_paid' => $histPaid,
+                'alloc_paid' => Money::add($newPaid, $remPaid),
+            ];
+        }
+
         return view('livewire.battery.purchase.battery-purchase-list', [
-            'purchases' => $query->paginate(15),
-            'suppliers' => $this->showFormModal ? BatterySupplier::orderBy('name')->get(['id', 'name']) : collect(),
-            'products' => $this->showFormModal ? BatteryProduct::orderBy('product_name')->get(['id', 'product_name', 'cost_price']) : collect(),
+            'purchases' => $query->paginate($this->perPage),
+            'totalGrandSum' => Money::round($totalsRow->sum_grand ?? 0),
+            'totalPaidSum' => Money::round($totalsRow->sum_paid ?? 0),
+            'totalDueSum' => Money::round($totalsRow->sum_due ?? 0),
+            'totalReturnSum' => $totalReturnSum,
+            'filteredSuppliers' => $filteredSuppliers,
+            'filteredProducts' => $filteredProducts,
+            'brands' => $this->showQuickProductModal ? BatteryBrand::orderBy('name')->get(['id', 'name']) : collect(),
+            'categories' => $this->showQuickProductModal ? BatteryCategory::orderBy('name')->get(['id', 'name']) : collect(),
+            'subCategories' => $this->showQuickProductModal
+                ? BatterySubCategory::when($this->newProdCategoryId, fn ($q) => $q->where('category_id', $this->newProdCategoryId))->orderBy('name')->get(['id', 'name'])
+                : collect(),
+            'units' => $this->showQuickProductModal ? BatteryUnit::orderBy('unit_name')->get(['id', 'unit_name']) : collect(),
+            'formQty' => $formQty,
+            'formSubTotal' => $formSub,
+            'formDiscAmount' => $formDiscAmount,
+            'formNetPayable' => $formNetPayable,
+            'formDue' => $formDue,
+            'formStatus' => $formStatus,
+            'splitPreview' => $splitPreview,
         ]);
     }
 }

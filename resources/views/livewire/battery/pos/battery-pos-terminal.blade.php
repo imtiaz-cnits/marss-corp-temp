@@ -713,7 +713,7 @@
                                 >%</button>
                             </div>
                             @if($discount_type === 'percent' && (float) $discountAmt > 0)
-                                <span class="px-1 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold whitespace-nowrap">= ৳ {{ number_format((float) $discountAmt, 2) }}</span>
+                                <span class="px-1 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold whitespace-nowrap">({{ Money::formatBd($discountAmt, false) }}৳)</span>
                             @endif
                         </div>
                         <input
