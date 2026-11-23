@@ -81,7 +81,7 @@
 
             {{-- TAB PANE 1: CUSTOMER DUE LIST --}}
             @if($activeTab === 'due-list')
-                <div class="hidden md:block w-full overflow-x-auto rounded-2xl unified-ui-border shadow-2xs bg-white dark:bg-slate-900">
+                <div class="hidden lg:block w-full overflow-x-auto rounded-2xl unified-ui-border shadow-2xs bg-white dark:bg-slate-900">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-[#15803d] text-white text-xs font-semibold uppercase tracking-wider">
@@ -151,8 +151,8 @@
                     </table>
                 </div>
 
-                {{-- Mobile Cards (Tab 1) --}}
-                <div class="block md:hidden space-y-3 mb-3">
+                {{-- Mobile & Tablet Cards (Tab 1: 1-col Mobile, 2-col Tablet) --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-3 mb-3">
                     @forelse($customers as $idx => $c)
                         @php
                             $prevDue = Money::round($c->previous_due_amount ?? 0);
@@ -205,7 +205,7 @@
 
             {{-- TAB PANE 2: DUE COLLECTION LIST --}}
             @else
-                <div class="hidden md:block w-full overflow-x-auto rounded-2xl unified-ui-border shadow-2xs bg-white dark:bg-slate-900">
+                <div class="hidden lg:block w-full overflow-x-auto rounded-2xl unified-ui-border shadow-2xs bg-white dark:bg-slate-900">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-[#15803d] text-white text-xs font-semibold uppercase tracking-wider">
@@ -274,8 +274,8 @@
                     </table>
                 </div>
 
-                {{-- Mobile Cards (Tab 2) --}}
-                <div class="block md:hidden space-y-3 mb-3">
+                {{-- Mobile & Tablet Cards (Tab 2: 1-col Mobile, 2-col Tablet) --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-3 mb-3">
                     @forelse($collections as $idx => $row)
                         @php
                             $prevAmt = Money::round($row->previous_due_amount ?? 0);

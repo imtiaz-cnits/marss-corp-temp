@@ -87,14 +87,14 @@ class AuthenticationAndRbacTest extends TestCase
         $this->actingAs($manager)->get(route('settings.users'))->assertForbidden();
     }
 
-    public function test_admin_can_access_profit_metrics_but_not_developer_only_user_management_or_logs(): void
+    public function test_admin_can_access_profit_metrics_and_logs_but_not_developer_only_user_management(): void
     {
         $admin = User::where('email', 'admin@gmail.com')->firstOrFail();
 
         $this->assertTrue($admin->canViewProfit());
         $this->actingAs($admin)->get(route('retail.dashboard'))->assertOk()->assertSee('Net Profit (Admin)');
         $this->actingAs($admin)->get(route('settings.profile'))->assertOk();
-        $this->actingAs($admin)->get(route('settings.activity-log'))->assertForbidden();
+        $this->actingAs($admin)->get(route('settings.activity-log'))->assertOk();
         $this->actingAs($admin)->get(route('settings.users'))->assertForbidden();
     }
 

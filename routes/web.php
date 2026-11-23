@@ -36,9 +36,9 @@ Route::middleware('auth')->group(function () {
         ->middleware('developer')
         ->name('settings.users');
 
-    // Activity Audit Log (Developer ONLY)
+    // Activity Audit Log (Admin & Developer)
     Route::get('/admin-dashboard-user-activity-log', UserActivityLogPage::class)
-        ->middleware('developer')
+        ->middleware('admin')
         ->name('settings.activity-log');
 
     // Geographic Masters (preserving exact legacy URL spellings)

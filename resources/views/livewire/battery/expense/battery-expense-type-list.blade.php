@@ -25,7 +25,7 @@
                 </select>
             </div>
         </div>
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto hidden lg:block">
             <table class="w-full text-xs sm:text-sm text-left">
                 <thead class="bg-[#15803d] text-white text-xs uppercase tracking-wider whitespace-nowrap">
                     <tr>
@@ -41,8 +41,8 @@
                             <td class="px-4 py-3 text-slate-500 font-medium">{{ $types->firstItem() + $idx }}</td>
                             <td class="px-4 py-3 font-bold text-slate-900 dark:text-white">{{ $t->type_name }}</td>
                             <td class="px-4 py-3">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
-                                    Active
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold {{ strtolower((string)($t->status ?? 'active')) === 'inactive' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300' }}">
+                                    {{ ucfirst((string) ($t->status ?: 'active')) }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right whitespace-nowrap">
@@ -62,7 +62,51 @@
                 </tbody>
             </table>
         </div>
-        <div class="p-3 border-t border-slate-200 dark:border-slate-800">{{ $types->links() }}</div>
+
+        {{-- Mobile & Tablet Cards View (1 col mobile, 2 col tablet) --}}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-3 p-3">
+            @forelse($types as $idx => $t)
+                <div class="unified-ui-border rounded-2xl p-3.5 bg-white dark:bg-slate-800/90 shadow-2xs space-y-2.5 border border-slate-200 dark:border-slate-800">
+                    <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 gap-1.5 flex-wrap">
+                        <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs">
+                            #{{ $types->firstItem() + $idx }}
+                        </span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold {{ strtolower((string)($t->status ?? 'active')) === 'inactive' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300' }}">
+                            {{ ucfirst((string) ($t->status ?: 'active')) }}
+                        </span>
+                    </div>
+                    <div>
+                        <h6 class="text-sm font-bold text-slate-900 dark:text-white break-words m-0">
+                            {{ $t->type_name }}
+                        </h6>
+                    </div>
+                    <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <button type="button" wire:click="openEdit({{ $t->id }})" class="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 inline-flex items-center justify-center cursor-pointer transition border border-emerald-200 dark:border-emerald-800" title="Edit">
+                            <i class="fa-solid fa-pen-to-square text-xs"></i>
+                        </button>
+                        <button type="button" wire:click="confirmDelete({{ $t->id }})" class="w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 inline-flex items-center justify-center cursor-pointer transition border border-rose-200 dark:border-rose-800" title="Delete">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            @empty
+                <div class="col-span-full py-8 text-center text-slate-500">No expense types found.</div>
+            @endforelse
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center justify-between p-3 border-t border-slate-200 dark:border-slate-800 gap-3">
+            <div class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                <span>Showing</span>
+                <span class="font-bold text-slate-800 dark:text-slate-100 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">{{ $types->firstItem() ?? 0 }} – {{ $types->lastItem() ?? 0 }}</span>
+                <span>of</span>
+                <span class="font-bold text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-slate-700">{{ $types->total() }}</span>
+                <span>entries</span>
+            </div>
+            <div class="w-full sm:w-auto flex items-center justify-center sm:justify-end">
+                {{ $types->links() }}
+            </div>
+        </div>
     </div>
 
     {{-- CREATE / EDIT EXPENSE TYPE MODAL (1:1 Reference) --}}

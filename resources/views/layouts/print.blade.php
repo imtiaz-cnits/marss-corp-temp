@@ -12,7 +12,7 @@
     <style>
         @page {
             size: A4 portrait;
-            margin: 10mm 15mm 10mm 15mm;
+            margin: 0;
         }
         .invoice-sheet {
             box-sizing: border-box;
@@ -20,7 +20,7 @@
             max-width: 8.27in;
             min-height: 270mm;
             margin: 0 auto;
-            padding: 24px;
+            padding: 16px !important;
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
@@ -47,15 +47,16 @@
             .invoice-sheet {
                 box-shadow: none !important;
                 border: none !important;
-                margin: 0 !important;
+                margin: 0 auto !important;
                 width: 100% !important;
                 max-width: 100% !important;
-                min-height: 265mm !important;
+                min-height: 270mm !important;
                 height: 100% !important;
-                padding: 10px 16px 20px 16px !important;
+                padding: 16px !important;
                 display: flex !important;
                 flex-direction: column !important;
                 justify-content: space-between !important;
+                box-sizing: border-box !important;
             }
             table {
                 page-break-inside: auto;

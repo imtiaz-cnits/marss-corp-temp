@@ -21,7 +21,20 @@
                 @endforelse
             </tbody>
         </table>
-        <div class="p-3">{{ $units->links() }}</div>
+        <div class="flex flex-col sm:flex-row items-center justify-between pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 gap-3">
+                <div class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                    <span>Showing</span>
+                    <span class="font-bold text-slate-800 dark:text-slate-100 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">{{ $units->firstItem() ?? 0 }} – {{ $units->lastItem() ?? 0 }}</span>
+                    <span>of</span>
+                    <span class="font-bold text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-slate-700">{{ $units->total() }}</span>
+                    <span>units</span>
+                </div>
+                <div class="w-full sm:w-auto flex items-center justify-center sm:justify-end">
+                    {{ $units->links() }}
+                </div>
+            </div>
+        
     </div>
     <x-ui.modal :show="$showModal" :title="$editingId ? 'Edit Unit' : 'Add Unit'" close-method="closeModal">
         <form wire:submit="save" class="space-y-3">

@@ -29,6 +29,8 @@ class BatteryCustomerProfile extends Component
 
     public string $date = '';
 
+    public string $activeTab = 'invoices';
+
     public function mount(int $id): void
     {
         $this->customerId = $id;
@@ -64,6 +66,13 @@ class BatteryCustomerProfile extends Component
     public function closeModal(): void
     {
         $this->showCollectModal = false;
+    }
+
+    public function setTab(string $tab): void
+    {
+        if (in_array($tab, ['invoices', 'returns', 'payments'], true)) {
+            $this->activeTab = $tab;
+        }
     }
 
     public function render(BatteryDueCollectionService $service)

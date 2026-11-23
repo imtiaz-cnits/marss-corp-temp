@@ -106,7 +106,7 @@
         </div>
 
         {{-- 3. 5 KPI Stat Cards Row (Reference Parity) --}}
-        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2.5 sm:gap-3 mb-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-2.5 sm:gap-3 mb-4">
             <div class="unified-ui-border rounded-[14px] bg-white dark:bg-slate-900 px-3 py-2.5 flex items-center justify-between gap-2 shadow-2xs" style="border-left: 4px solid #0284c7 !important;">
                 <div class="min-w-0">
                     <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Purchases</div>
@@ -189,7 +189,7 @@
         {{-- 5. Tab Panes --}}
         @if($activeTab === 'purchases')
             {{-- Tab 1: Purchase Invoices (Desktop) --}}
-            <div class="table-responsive unified-ui-border hidden md:block w-full overflow-x-auto rounded-2xl shadow-2xs bg-white dark:bg-slate-900">
+            <div class="table-responsive unified-ui-border hidden lg:block w-full overflow-x-auto rounded-2xl shadow-2xs bg-white dark:bg-slate-900">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-[#15803d] text-white text-[11px] font-bold uppercase tracking-wider whitespace-nowrap">
@@ -263,8 +263,8 @@
                 </table>
             </div>
 
-            {{-- Tab 1: Mobile Cards --}}
-            <div class="block md:hidden space-y-3">
+            {{-- Tab 1: Mobile & Tablet Cards (1-col Mobile, 2-col Tablet) --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-3 mb-3">
                 @forelse($purchases as $idx => $p)
                     @php
                         $grand = (float) ($p->grand_subtotal ?? 0);
@@ -301,7 +301,7 @@
             </div>
         @elseif($activeTab === 'returns')
             {{-- Tab 2: Purchase Returns / Credit (Desktop) --}}
-            <div class="table-responsive unified-ui-border hidden md:block w-full overflow-x-auto rounded-2xl shadow-2xs bg-white dark:bg-slate-900">
+            <div class="table-responsive unified-ui-border hidden lg:block w-full overflow-x-auto rounded-2xl shadow-2xs bg-white dark:bg-slate-900">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-[#15803d] text-white text-[11px] font-bold uppercase tracking-wider whitespace-nowrap">
@@ -336,8 +336,8 @@
                 </table>
             </div>
 
-            {{-- Tab 2: Mobile Cards --}}
-            <div class="block md:hidden space-y-3">
+            {{-- Tab 2: Mobile & Tablet Cards (1-col Mobile, 2-col Tablet) --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-3 mb-3">
                 @forelse($returns as $idx => $ret)
                     @php
                         $purNo = $ret->purchase?->purchase_id ?: ($ret->return_number ?: ('#PurID'.str_pad((string) ($ret->purchase_id ?? 0), 5, '0', STR_PAD_LEFT)));
@@ -364,7 +364,7 @@
             </div>
         @else
             {{-- Tab 3: Payment & Transaction History (Desktop) --}}
-            <div class="table-responsive unified-ui-border hidden md:block w-full overflow-x-auto rounded-2xl shadow-2xs bg-white dark:bg-slate-900">
+            <div class="table-responsive unified-ui-border hidden lg:block w-full overflow-x-auto rounded-2xl shadow-2xs bg-white dark:bg-slate-900">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-[#15803d] text-white text-[11px] font-bold uppercase tracking-wider whitespace-nowrap">
@@ -399,8 +399,8 @@
                 </table>
             </div>
 
-            {{-- Tab 3: Mobile Cards --}}
-            <div class="block md:hidden space-y-3">
+            {{-- Tab 3: Mobile & Tablet Cards (1-col Mobile, 2-col Tablet) --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-3 mb-3">
                 @forelse($transactions as $idx => $trx)
                     <div class="unified-ui-border rounded-2xl p-3.5 bg-white dark:bg-slate-800/70 shadow-2xs">
                         <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-700">

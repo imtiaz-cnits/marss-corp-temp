@@ -4,50 +4,50 @@
     'title' => 'MARSS CORPORATION',
 ])
 
-<div class="flex items-center flex-wrap gap-1.5 flex-shrink-0 no-print">
+<div class="flex items-center flex-wrap gap-1.5 w-full sm:w-auto no-print">
     <button
         type="button"
         onclick="window.marssExport.copy('{{ $tableId }}')"
         title="Copy table data"
-        class="export-btn export-btn--copy"
+        class="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
     >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        <i class="fa-regular fa-copy text-slate-500"></i>
         <span>Copy</span>
     </button>
     <button
         type="button"
         onclick="window.marssExport.csv('{{ $tableId }}', '{{ $filename }}')"
-        title="Export CSV table data"
-        class="export-btn export-btn--csv"
+        title="Export CSV file"
+        class="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
     >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        <i class="fa-solid fa-file-csv text-emerald-600"></i>
         <span>CSV</span>
     </button>
     <button
         type="button"
         onclick="window.marssExport.excel('{{ $tableId }}', '{{ $filename }}', '{{ addslashes($title) }}')"
-        title="Export Excel table data"
-        class="export-btn export-btn--excel"
+        title="Export Excel file"
+        class="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
     >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><polyline points="8 13 12 17 16 13"></polyline><line x1="12" y1="17" x2="12" y2="10"></line></svg>
+        <i class="fa-solid fa-file-excel text-emerald-600"></i>
         <span>Excel</span>
     </button>
     <button
         type="button"
-        onclick="window.marssExport.printTable('{{ $tableId }}', '{{ addslashes($title) }}')"
-        title="Download PDF / Print"
-        class="export-btn export-btn--pdf"
+        onclick="window.marssExport.pdf('{{ $tableId }}', '{{ $filename }}', '{{ addslashes($title) }}')"
+        title="Download PDF"
+        class="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
     >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+        <i class="fa-solid fa-file-pdf text-rose-600"></i>
         <span>PDF</span>
     </button>
     <button
         type="button"
         onclick="window.marssExport.printTable('{{ $tableId }}', '{{ addslashes($title) }}')"
-        title="Print table on A4"
-        class="export-btn export-btn--print"
+        title="Print table"
+        class="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
     >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+        <i class="fa-solid fa-print text-sky-600"></i>
         <span>Print</span>
     </button>
 </div>

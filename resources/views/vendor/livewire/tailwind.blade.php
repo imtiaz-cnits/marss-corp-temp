@@ -1,86 +1,75 @@
 @php
-    if (! isset($scrollTo)) {
-        $scrollTo = 'body';
+if (! isset($scrollTo)) {
+    $scrollTo = 'body';
+}
+
+$scrollIntoViewJsSnippet = ($scrollTo !== false)
+    ? <<<JS
+       (\$el.closest('{$scrollTo}') || document.querySelector('{$scrollTo}')).scrollIntoView()
+    JS
+    : '';
+
+$currentPage = $paginator->currentPage();
+$lastPage = $paginator->lastPage();
+
+// Smart page window matching reference project (e.g. 1 2 3 ... 9)
+$startPage = max(1, $currentPage - 1);
+$endPage = min($lastPage, $currentPage + 1);
+
+if ($currentPage <= 2) {
+    $startPage = 1;
+    $endPage = min($lastPage, 3);
+}
+if ($currentPage >= $lastPage - 1) {
+    $startPage = max(1, $lastPage - 2);
+    $endPage = $lastPage;
+}
+
+$pageList = [];
+if ($startPage > 1) {
+    $pageList[] = 1;
+    if ($startPage > 2) {
+        $pageList[] = '...';
     }
-    $scrollIntoViewJsSnippet = ($scrollTo !== false)
-        ? <<<JS
-           (\$el.closest('{$scrollTo}') || document.querySelector('{$scrollTo}')).scrollIntoView()
-        JS
-        : '';
+}
+for ($p = $startPage; $p <= $endPage; $p++) {
+    $pageList[] = $p;
+}
+if ($endPage < $lastPage) {
+    if ($endPage < $lastPage - 1) {
+        $pageList[] = '...';
+    }
+    $pageList[] = $lastPage;
+}
 @endphp
 
 <div>
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
-        {{-- Left: Reference Project Display Info Box with Pulsing Emerald Dot --}}
-        <div id="display-info">
-            <div class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-                <span>Showing</span>
-                <span class="display-info-box font-bold text-slate-800 dark:text-slate-100 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">
-                    {{ $paginator->firstItem() ?? 0 }} – {{ $paginator->lastItem() ?? 0 }}
-                </span>
-                <span>of</span>
-                <span class="display-info-box font-bold text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-slate-700">
-                    {{ $paginator->total() }}
-                </span>
-                <span>entries</span>
-            </div>
-        </div>
-
-        {{-- Right: Reference Project Smart Pagination Controls (.custom-pagination-btn) --}}
-        @if ($paginator->hasPages())
-            <nav role="navigation" aria-label="Pagination Navigation" id="pagination" class="flex items-center gap-1 sm:gap-1.5 flex-nowrap justify-center max-w-full overflow-x-auto pb-0.5">
+    @if ($paginator->hasPages())
+        <nav role="navigation" aria-label="Pagination Navigation" class="flex items-center justify-center sm:justify-end w-full">
+            <div class="flex items-center gap-1 sm:gap-1.5 flex-nowrap justify-center max-w-full overflow-x-auto py-1">
                 {{-- Previous Page Link --}}
                 @if ($paginator->onFirstPage())
-                    <span class="custom-pagination-btn disabled">
-                        <svg class="w-3 h-3 mr-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                        Prev
-                    </span>
+                    <button type="button" disabled class="custom-pagination-btn pagination-nav-btn disabled" aria-disabled="true">
+                        <svg class="w-3 h-3 me-0.5 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                        <span>Prev</span>
+                    </button>
                 @else
-                    <button
-                        type="button"
-                        wire:click="previousPage('{{ $paginator->getPageName() }}')"
-                        x-on:click="{{ $scrollIntoViewJsSnippet }}"
-                        wire:loading.attr="disabled"
-                        class="custom-pagination-btn"
-                    >
-                        <svg class="w-3 h-3 mr-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                        Prev
+                    <button type="button" wire:click="previousPage('{{ $paginator->getPageName() }}')" x-on:click="{{ $scrollIntoViewJsSnippet }}" dusk="previousPage{{ $paginator->getPageName() == 'page' ? '' : '.' . $paginator->getPageName() }}.after" class="custom-pagination-btn pagination-nav-btn" aria-label="{{ __('pagination.previous') }}">
+                        <svg class="w-3 h-3 me-0.5 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                        <span>Prev</span>
                     </button>
                 @endif
 
-                {{-- Compact 3-Button Smart Pagination (1, 2, 3 ... Last) --}}
-                @php
-                    $currentPage = $paginator->currentPage();
-                    $lastPage = $paginator->lastPage();
-                    $pageItems = [];
-
-                    if ($lastPage <= 4) {
-                        $pageItems = range(1, $lastPage);
-                    } elseif ($currentPage <= 3) {
-                        $pageItems = [1, 2, 3, '...', $lastPage];
-                    } elseif ($currentPage >= $lastPage - 2) {
-                        $pageItems = [1, '...', $lastPage - 2, $lastPage - 1, $lastPage];
-                    } else {
-                        $pageItems = [1, '...', $currentPage - 1, $currentPage, $currentPage + 1, '...', $lastPage];
-                    }
-                @endphp
-
-                @foreach ($pageItems as $itemIdx => $item)
+                {{-- Smart Pagination Elements --}}
+                @foreach ($pageList as $item)
                     @if ($item === '...')
-                        <span wire:key="paginator-{{ $paginator->getPageName() }}-dots-{{ $itemIdx }}" class="px-1.5 text-slate-400 font-bold select-none">...</span>
+                        <span class="px-1 text-slate-400 font-bold text-xs sm:text-sm">...</span>
                     @elseif ($item == $currentPage)
-                        <span wire:key="paginator-{{ $paginator->getPageName() }}-page-{{ $item }}" aria-current="page" class="custom-pagination-btn active">
+                        <button type="button" class="custom-pagination-btn active" disabled aria-current="page">
                             {{ $item }}
-                        </span>
+                        </button>
                     @else
-                        <button
-                            type="button"
-                            wire:key="paginator-{{ $paginator->getPageName() }}-page-{{ $item }}"
-                            wire:click="gotoPage({{ $item }}, '{{ $paginator->getPageName() }}')"
-                            x-on:click="{{ $scrollIntoViewJsSnippet }}"
-                            class="custom-pagination-btn"
-                        >
+                        <button type="button" wire:click="gotoPage({{ $item }}, '{{ $paginator->getPageName() }}')" x-on:click="{{ $scrollIntoViewJsSnippet }}" class="custom-pagination-btn" aria-label="{{ __('Go to page :page', ['page' => $item]) }}">
                             {{ $item }}
                         </button>
                     @endif
@@ -88,35 +77,17 @@
 
                 {{-- Next Page Link --}}
                 @if ($paginator->hasMorePages())
-                    <button
-                        type="button"
-                        wire:click="nextPage('{{ $paginator->getPageName() }}')"
-                        x-on:click="{{ $scrollIntoViewJsSnippet }}"
-                        wire:loading.attr="disabled"
-                        class="custom-pagination-btn"
-                    >
-                        Next
-                        <svg class="w-3 h-3 ml-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    <button type="button" wire:click="nextPage('{{ $paginator->getPageName() }}')" x-on:click="{{ $scrollIntoViewJsSnippet }}" dusk="nextPage{{ $paginator->getPageName() == 'page' ? '' : '.' . $paginator->getPageName() }}.after" class="custom-pagination-btn pagination-nav-btn" aria-label="{{ __('pagination.next') }}">
+                        <span>Next</span>
+                        <svg class="w-3 h-3 ms-0.5 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </button>
                 @else
-                    <span class="custom-pagination-btn disabled">
-                        Next
-                        <svg class="w-3 h-3 ml-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                    </span>
+                    <button type="button" disabled class="custom-pagination-btn pagination-nav-btn disabled" aria-disabled="true">
+                        <span>Next</span>
+                        <svg class="w-3 h-3 ms-0.5 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
                 @endif
-            </nav>
-        @else
-            <div id="pagination" class="flex items-center gap-1 sm:gap-1.5">
-                <span class="custom-pagination-btn disabled">
-                    <svg class="w-3 h-3 mr-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                    Prev
-                </span>
-                <span class="custom-pagination-btn active">1</span>
-                <span class="custom-pagination-btn disabled">
-                    Next
-                    <svg class="w-3 h-3 ml-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                </span>
             </div>
-        @endif
-    </div>
+        </nav>
+    @endif
 </div>

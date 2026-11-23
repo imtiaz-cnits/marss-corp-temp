@@ -131,7 +131,7 @@
         </div>
 
         {{-- 3. Desktop Table (10 Columns) --}}
-        <div class="table-responsive unified-ui-border hidden md:block w-full overflow-x-auto rounded-2xl shadow-2xs bg-white dark:bg-slate-900">
+        <div class="table-responsive unified-ui-border hidden lg:block w-full overflow-x-auto rounded-2xl shadow-2xs bg-white dark:bg-slate-900">
             <table id="printTable" data-export-skip-last="true" class="w-full text-xs sm:text-[13px] text-left border-collapse">
                 <thead>
                     <tr class="bg-[#15803d] text-white text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
@@ -251,8 +251,8 @@
             </table>
         </div>
 
-        {{-- 4. Mobile Card List View --}}
-        <div class="block md:hidden mb-3 space-y-3">
+        {{-- 4. Mobile & Tablet Card List View (1-col Mobile, 2-col Tablet) --}}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-3 mb-3">
             @foreach($products as $idx => $p)
                 @php
                     $qty = (int) round((float) ($p->quantity ?? 0));
@@ -324,17 +324,17 @@
             @endforeach
         </div>
 
-        {{-- 5. Display Info & Pagination Footer --}}
+        {{-- 5. Modern Smart Pagination and Display Info Footer --}}
         <div class="flex flex-col sm:flex-row items-center justify-between pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 gap-3">
-            <div class="display-info-badge px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 flex-wrap shadow-2xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
-                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+            <div class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                 <span>Showing</span>
-                <span class="stat-count px-1.5 py-0.5 rounded font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-700">{{ $products->firstItem() ?? 0 }} – {{ $products->lastItem() ?? 0 }}</span>
+                <span class="font-bold text-slate-800 dark:text-slate-100 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">{{ $products->firstItem() ?? 0 }} – {{ $products->lastItem() ?? 0 }}</span>
                 <span>of</span>
-                <span class="stat-total px-1.5 py-0.5 rounded font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-700">{{ $products->total() }}</span>
+                <span class="font-bold text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-slate-700">{{ $products->total() }}</span>
                 <span>products</span>
             </div>
-            <div class="w-full sm:w-auto">{{ $products->links() }}</div>
+            <div class="w-full sm:w-auto flex items-center justify-center sm:justify-end">{{ $products->links() }}</div>
         </div>
     </div>
 

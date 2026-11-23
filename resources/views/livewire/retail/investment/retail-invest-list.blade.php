@@ -38,7 +38,20 @@
                 </tbody>
             </table>
         </div>
-        <div class="p-3 border-t border-slate-200 dark:border-slate-800">{{ $invests->links() }}</div>
+        <div class="flex flex-col sm:flex-row items-center justify-between pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 gap-3">
+                <div class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                    <span>Showing</span>
+                    <span class="font-bold text-slate-800 dark:text-slate-100 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">{{ $invests->firstItem() ?? 0 }} – {{ $invests->lastItem() ?? 0 }}</span>
+                    <span>of</span>
+                    <span class="font-bold text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-slate-700">{{ $invests->total() }}</span>
+                    <span>investments</span>
+                </div>
+                <div class="w-full sm:w-auto flex items-center justify-center sm:justify-end">
+                    {{ $invests->links() }}
+                </div>
+            </div>
+        
     </div>
 
     <x-ui.modal :show="$showModal" :title="$editingId ? 'Edit Investment' : 'Record Investment'" close-method="closeModal">

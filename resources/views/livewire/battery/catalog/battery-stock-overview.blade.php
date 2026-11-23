@@ -72,7 +72,7 @@
         </div>
 
         {{-- 2. Summary Cards (Reference Parity: Low Stock, Out of Stock, Total Cost Value, Total Sell Value) --}}
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mb-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mb-5">
             <div class="rounded-xl p-3.5 border-[1.5px] bg-amber-50/80 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/60">
                 <p class="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-1">Low Stock Items</p>
                 <p class="text-lg sm:text-xl font-extrabold text-amber-800 dark:text-amber-300 m-0">{{ $summary['low_stock'] }} Products</p>
@@ -187,7 +187,7 @@
         </div>
 
         {{-- 4. Desktop Table (10 Columns Reference Parity: SL | Img | Product Name | Barcode / Code | Category | Stock Qty | Cost Price | Sell Price | Status | Adjust) --}}
-        <div class="table-responsive unified-ui-border hidden md:block w-full overflow-x-auto rounded-2xl shadow-2xs bg-white dark:bg-slate-900">
+        <div class="table-responsive unified-ui-border hidden lg:block w-full overflow-x-auto rounded-2xl shadow-2xs bg-white dark:bg-slate-900">
             <table id="batteryStockTable" data-export-skip-last="true" class="w-full text-xs sm:text-[13px] text-left border-collapse">
                 <thead>
                     <tr class="bg-[#15803d] text-white text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
@@ -293,8 +293,8 @@
             </table>
         </div>
 
-        {{-- 5. Mobile Cards (Reference Parity) --}}
-        <div class="block md:hidden space-y-3">
+        {{-- 5. Mobile & Tablet Cards (1-col Mobile, 2-col Tablet) --}}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-3 mb-3">
             @forelse($products as $p)
                 @php
                     $qty = (int) round((float) ($p->quantity ?? 0));

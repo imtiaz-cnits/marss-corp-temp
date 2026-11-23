@@ -39,7 +39,7 @@
 
         {{-- 2. Controls & Filter Row: Search | SHOW: 15 | All Status --}}
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-3 mb-4">
-            <div class="unified-ui-border flex-1 h-[38px] flex items-center px-3 bg-white dark:bg-slate-800/90 rounded-xl shadow-2xs focus-within:border-[#15803d]">
+            <div class="unified-ui-border flex-1 h-[38px] flex items-center px-3 py-2 bg-white dark:bg-slate-800/90 rounded-xl shadow-2xs focus-within:border-[#15803d]">
                 <svg class="w-4 h-4 text-slate-400 shrink-0 mr-2 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -212,16 +212,17 @@
         </div>
 
         {{-- 5. Display Info & Pagination Footer --}}
+        {{-- 5. Modern Smart Pagination and Display Info Footer --}}
         <div class="flex flex-col sm:flex-row items-center justify-between pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 gap-3">
-            <div class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 flex-wrap shadow-2xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
-                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+            <div class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                 <span>Showing</span>
-                <span class="px-1.5 py-0.5 rounded font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-700">{{ $categories->firstItem() ?? 0 }} – {{ $categories->lastItem() ?? 0 }}</span>
+                <span class="font-bold text-slate-800 dark:text-slate-100 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">{{ $categories->firstItem() ?? 0 }} – {{ $categories->lastItem() ?? 0 }}</span>
                 <span>of</span>
-                <span class="px-1.5 py-0.5 rounded font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50">{{ $categories->total() }}</span>
+                <span class="font-bold text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-slate-700">{{ $categories->total() }}</span>
                 <span>categories</span>
             </div>
-            <div class="w-full sm:w-auto">
+            <div class="w-full sm:w-auto flex items-center justify-center sm:justify-end">
                 {{ $categories->links() }}
             </div>
         </div>

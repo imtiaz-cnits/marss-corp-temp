@@ -274,7 +274,7 @@
             </div>
 
             {{-- 3. Desktop Table (14 Reference Columns) --}}
-            <div class="hidden md:block w-full overflow-x-auto rounded-2xl unified-ui-border shadow-2xs bg-white dark:bg-slate-900 mb-4" style="min-height: 240px;">
+            <div class="hidden lg:block w-full overflow-x-auto rounded-2xl unified-ui-border shadow-2xs bg-white dark:bg-slate-900 mb-4" style="min-height: 240px;">
                 <table class="w-full text-left border-collapse min-w-full table-auto">
                     <thead>
                         <tr class="bg-[#15803d] text-white text-[11px] font-semibold uppercase tracking-wider">
@@ -382,8 +382,8 @@
                 </table>
             </div>
 
-            {{-- 4. Mobile Card List View --}}
-            <div class="block md:hidden space-y-3 mb-4">
+            {{-- 4. Mobile & Tablet Card List View (1-col Mobile, 2-col Tablet) --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-3 mb-4">
                 @forelse($purchases as $idx => $p)
                     @php
                         $grandVal = Money::add($p->grand_subtotal ?? 0, $p->delivery_charge ?? 0);

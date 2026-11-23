@@ -90,13 +90,14 @@
         style="display: none;"
     ></div>
 
-    {{-- Left Vertical Sidebar (240px Expanded / 70px Collapsed Emerald-Teal Mesh Gradient, Zero Right Shadow Bleed) --}}
+    {{-- Left Vertical Sidebar (240px Expanded / 70px Collapsed Emerald-Teal Mesh Gradient, Zero Right Shadow Bleed, 100vh Full Height Always) --}}
     <aside
         :class="[
             sidebarCollapsed ? 'lg:w-[70px] sidebar-is-collapsed' : 'lg:w-[240px]',
             mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         ]"
-        class="fixed inset-y-0 left-0 z-40 w-[240px] h-[100dvh] max-h-[100dvh] flex flex-col bg-gradient-to-b from-[#064e3b] via-[#047857] to-[#0f766e] border-r border-slate-200/20 dark:border-slate-800 shadow-none transition-all duration-200 ease-in-out no-print"
+        class="fixed inset-y-0 top-0 bottom-0 left-0 z-40 w-[240px] h-screen h-[100vh] h-[100dvh] min-h-screen min-h-[100vh] min-h-[100dvh] flex flex-col bg-gradient-to-b from-[#064e3b] via-[#047857] to-[#0f766e] border-r border-slate-200/20 dark:border-slate-800 shadow-none transition-all duration-200 ease-in-out no-print"
+        style="height: 100dvh; min-height: 100dvh; bottom: 0;"
     >
         {{-- Brand Logo Header (58px) + Mobile Close Button Right of Logo --}}
         <div class="relative h-[58px] shrink-0 flex items-center justify-center px-2 pr-10 lg:pr-2 bg-[#064e3b]/95 border-b border-white/15">

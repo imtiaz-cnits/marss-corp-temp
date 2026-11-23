@@ -128,7 +128,7 @@
         </div>
 
         {{-- 3. Desktop Table (Reference Parity: 8 Columns: SL | INVOICE NO | CUSTOMER INFO | FINANCIAL SUMMARY | CREATED BY | DATE | STATUS | ACTION) --}}
-        <div class="table-responsive unified-ui-border hidden md:block w-full overflow-x-auto rounded-2xl shadow-2xs bg-white dark:bg-slate-900">
+        <div class="table-responsive unified-ui-border hidden lg:block w-full overflow-x-auto rounded-2xl shadow-2xs bg-white dark:bg-slate-900">
             <table id="retailInvoiceTable" data-export-skip-last="true" class="w-full text-xs sm:text-[13px] text-left border-collapse">
                 <thead>
                     <tr class="bg-[#15803d] text-white text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
@@ -243,8 +243,8 @@
             </table>
         </div>
 
-        {{-- 4. Mobile Cards (Reference Parity: 2x2 Grid Side-by-Side Financial Box) --}}
-        <div class="md:hidden space-y-3">
+        {{-- 4. Mobile & Tablet Cards (Reference Parity: 1-col Mobile, 2-col Tablet, 2x2 Financial Box) --}}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-3 mb-3">
             @foreach($orders as $idx => $order)
                 @php
                     $subTotal = (float) ($order->sub_total ?? 0);
@@ -273,35 +273,35 @@
                         $statusBadgeClass = 'status-badge-return bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400';
                     }
                 @endphp
-                <div class="unified-ui-border rounded-2xl p-3.5 bg-white dark:bg-slate-800/80 shadow-2xs space-y-2">
-                    <div class="flex items-center justify-between pb-2 mb-1 border-b border-slate-100 dark:border-slate-700">
-                        <div class="flex items-center gap-1.5">
-                            <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs">#{{ ($orders->firstItem() ?? 1) + $idx }}</span>
-                            <span class="font-bold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1">
-                                <i class="fa-solid fa-file-invoice text-emerald-600"></i>{{ $order->order_no ?? '-' }}
+                <div class="unified-ui-border rounded-2xl p-3.5 bg-white dark:bg-slate-800/80 shadow-2xs space-y-2 overflow-hidden">
+                    <div class="flex items-center justify-between pb-2 mb-1 border-b border-slate-100 dark:border-slate-700 gap-1.5 flex-wrap">
+                        <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+                            <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs shrink-0">#{{ ($orders->firstItem() ?? 1) + $idx }}</span>
+                            <span class="font-bold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1 break-all">
+                                <i class="fa-solid fa-file-invoice text-emerald-600 shrink-0"></i>{{ $order->order_no ?? '-' }}
                             </span>
                         </div>
-                        <div>
+                        <div class="shrink-0">
                             <span class="status-pill {{ $statusBadgeClass }}">
                                 {{ $paymentStatus }}
                             </span>
                         </div>
                     </div>
 
-                    <div>
+                    <div class="min-w-0">
                         @if($order->customer?->id)
-                            <a href="{{ route('retail.customer.profile', $order->customer->id) }}" class="text-emerald-700 dark:text-emerald-400 font-bold text-sm hover:underline block mb-0.5" title="View Customer Profile">
+                            <a href="{{ route('retail.customer.profile', $order->customer->id) }}" class="text-emerald-700 dark:text-emerald-400 font-bold text-sm hover:underline block mb-0.5 break-words" title="View Customer Profile">
                                 <i class="fa-solid fa-user-circle text-emerald-600 me-1"></i>{{ $order->customer->customer_name ?? 'Walk-in Customer' }}
                             </a>
                         @else
-                            <div class="font-bold text-slate-800 dark:text-slate-100 text-sm mb-0.5">
+                            <div class="font-bold text-slate-800 dark:text-slate-100 text-sm mb-0.5 break-words">
                                 <i class="fa-solid fa-user-circle text-emerald-600 me-1"></i>{{ $order->customer?->customer_name ?? 'Walk-in Customer' }}
                             </div>
                         @endif
-                        <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs">
-                            <span><i class="fa-solid fa-phone me-1"></i>{{ $order->customer?->mobile ?? '-' }}</span>
+                        <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs flex-wrap">
+                            <span class="break-all"><i class="fa-solid fa-phone me-1"></i>{{ $order->customer?->mobile ?? '-' }}</span>
                             @if($order->customer?->customer_id)
-                                <a href="{{ route('retail.customer.profile', $order->customer->id) }}">
+                                <a href="{{ route('retail.customer.profile', $order->customer->id) }}" class="shrink-0">
                                     <span class="customer-id-badge px-1.5 py-0.5 rounded font-bold text-[10px] bg-slate-50 dark:bg-slate-800">ID: {{ $order->customer->customer_id }}</span>
                                 </a>
                             @endif
@@ -310,21 +310,21 @@
 
                     <!-- 2x2 Grid Side-by-Side (Left-Right) with margin-top -->
                     <div class="mobile-fin-grid">
-                        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700">
-                            <span class="text-slate-500 dark:text-slate-400 text-xs font-semibold">Total:</span>
-                            <span class="font-bold text-slate-800 dark:text-slate-100 text-xs whitespace-nowrap">{{ Money::formatBd($subTotal) }}</span>
+                        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700 min-w-0">
+                            <span class="text-slate-500 dark:text-slate-400 text-xs font-semibold shrink-0">Total:</span>
+                            <span class="font-bold text-slate-800 dark:text-slate-100 text-xs text-right break-words">{{ Money::formatBd($subTotal) }}</span>
                         </div>
-                        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700">
-                            <span class="text-slate-500 dark:text-slate-400 text-xs font-semibold">Discount:</span>
-                            <span class="font-bold text-slate-600 dark:text-slate-300 text-xs whitespace-nowrap">{{ $discountDisplay }}</span>
+                        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700 min-w-0">
+                            <span class="text-slate-500 dark:text-slate-400 text-xs font-semibold shrink-0">Discount:</span>
+                            <span class="font-bold text-slate-600 dark:text-slate-300 text-[11px] leading-tight text-right break-words" title="{{ $discountDisplay }}">{{ $discountDisplay }}</span>
                         </div>
-                        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-slate-700">
-                            <span class="text-emerald-600 dark:text-emerald-400 text-xs font-semibold">Paid:</span>
-                            <span class="font-bold text-emerald-600 dark:text-emerald-400 text-xs whitespace-nowrap">{{ Money::formatBd($paidAmount) }}</span>
+                        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-slate-700 min-w-0">
+                            <span class="text-emerald-600 dark:text-emerald-400 text-xs font-semibold shrink-0">Paid:</span>
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400 text-xs text-right break-words">{{ Money::formatBd($paidAmount) }}</span>
                         </div>
-                        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl {{ $dueAmount > 0.009 ? 'bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200 dark:border-slate-700' : 'bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700' }}">
-                            <span class="{{ $dueAmount > 0.009 ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-500 dark:text-slate-400' }} text-xs font-semibold">Due:</span>
-                            <span class="font-bold {{ $dueAmount > 0.009 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400' }} text-xs whitespace-nowrap">{{ Money::formatBd($dueAmount) }}</span>
+                        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl {{ $dueAmount > 0.009 ? 'bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200 dark:border-slate-700' : 'bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700' }} min-w-0">
+                            <span class="{{ $dueAmount > 0.009 ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-500 dark:text-slate-400' }} text-xs font-semibold shrink-0">Due:</span>
+                            <span class="font-bold {{ $dueAmount > 0.009 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400' }} text-xs text-right break-words">{{ Money::formatBd($dueAmount) }}</span>
                         </div>
                     </div>
 
@@ -360,15 +360,15 @@
 
         {{-- 5. Modern Smart Pagination & Display Info Footer (Reference Parity) --}}
         <div class="flex flex-col sm:flex-row items-center justify-between pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 gap-3">
-            <div class="display-info-badge px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 flex-wrap shadow-2xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
-                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+            <div class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                 <span>Showing</span>
-                <span class="stat-count px-1.5 py-0.5 rounded font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-700">{{ $orders->firstItem() ?? 0 }} – {{ $orders->lastItem() ?? 0 }}</span>
+                <span class="font-bold text-slate-800 dark:text-slate-100 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">{{ $orders->firstItem() ?? 0 }} – {{ $orders->lastItem() ?? 0 }}</span>
                 <span>of</span>
-                <span class="stat-total px-1.5 py-0.5 rounded font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-700">{{ $orders->total() }}</span>
+                <span class="font-bold text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-slate-700">{{ $orders->total() }}</span>
                 <span>invoices</span>
             </div>
-            <div class="w-full sm:w-auto">
+            <div class="w-full sm:w-auto flex items-center justify-center sm:justify-end">
                 {{ $orders->links() }}
             </div>
         </div>

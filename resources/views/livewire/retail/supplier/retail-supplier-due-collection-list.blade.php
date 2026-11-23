@@ -28,7 +28,7 @@
 
         {{-- 2. Controls Row: Search | SHOW: 15 | All time Filter Dropdown (Screenshot 4) --}}
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3.5 mb-4">
-            <div class="unified-ui-border flex-1 min-w-0 h-[38px] flex items-center px-3 bg-white dark:bg-slate-800/90 rounded-xl shadow-2xs focus-within:border-[#15803d]">
+            <div class="unified-ui-border flex-1 min-w-0 h-[38px] flex items-center px-3 py-2 bg-white dark:bg-slate-800/90 rounded-xl shadow-2xs focus-within:border-[#15803d]">
                 <svg class="w-4 h-4 text-slate-400 shrink-0 mr-2 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -90,7 +90,7 @@
         </div>
 
         {{-- 3. Desktop Table (8 Columns Reference Parity — Screenshot 4) --}}
-        <div class="table-responsive unified-ui-border hidden md:block w-full overflow-x-auto rounded-2xl shadow-2xs bg-white dark:bg-slate-900">
+        <div class="table-responsive unified-ui-border hidden lg:block w-full overflow-x-auto rounded-2xl shadow-2xs bg-white dark:bg-slate-900">
             <table id="retailSupplierDueCollectionsTable" class="w-full text-left border-collapse">
                 <thead>
                     <tr class="bg-[#15803d] text-white text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
@@ -177,8 +177,8 @@
             </table>
         </div>
 
-        {{-- 4. Mobile Card View --}}
-        <div class="block md:hidden space-y-3">
+        {{-- 4. Mobile & Tablet Card View (1-col Mobile, 2-col Tablet) --}}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-3 mb-3">
             @forelse($rows as $idx => $r)
                 @php
                     $prevDue = (float) ($r->purchase_payable_amount ?? 0);

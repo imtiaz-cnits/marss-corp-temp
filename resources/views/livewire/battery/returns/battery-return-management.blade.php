@@ -51,10 +51,10 @@
     </div>
 
     {{-- RETURN HISTORY SECTION (1:1 Reference Screenshot 3) --}}
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border-[1.5px] border-slate-300 dark:border-slate-700 overflow-hidden shadow-xs">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 p-3 sm:p-5 shadow-xs">
         {{-- Toolbar --}}
-        <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-center gap-2.5 text-slate-800 dark:text-white font-bold text-sm sm:text-base">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-3 mb-4">
+            <div class="flex items-center gap-2 text-slate-800 dark:text-white font-bold text-sm sm:text-base">
                 <i class="fa-solid fa-clock-rotate-left text-[#15803d]"></i>
                 <span>{{ $tab === 'sales' ? 'Sales Return History' : 'Purchase Return History' }}</span>
                 <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
@@ -62,20 +62,22 @@
                 </span>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2.5">
-                <div class="w-32">
-                    <x-ui.date-picker wire:model.live="startDate" placeholder="From" />
+            <div class="flex items-center flex-wrap gap-2 sm:gap-2.5 w-full md:w-auto">
+                <div class="w-full sm:w-auto flex items-center gap-2">
+                    <div class="w-32">
+                        <x-ui.date-picker wire:model.live="startDate" placeholder="From" />
+                    </div>
+                    <div class="w-32">
+                        <x-ui.date-picker wire:model.live="endDate" placeholder="To" />
+                    </div>
                 </div>
-                <div class="w-32">
-                    <x-ui.date-picker wire:model.live="endDate" placeholder="To" />
-                </div>
-                <div class="relative w-48 sm:w-56">
+                <div class="relative flex-1 md:w-48 lg:w-56">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                     <input type="text" wire:model.live.debounce.300ms="search" placeholder="Filter returns..." class="w-full h-9 pl-8 pr-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs outline-none focus:border-emerald-600">
                 </div>
-                <div class="flex items-center gap-1.5">
-                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">SHOW:</span>
-                    <select wire:model.live="perPage" class="h-9 px-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none cursor-pointer">
+                <div class="flex items-center gap-1.5 h-9 px-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200">
+                    <span class="text-slate-400 text-[11px] uppercase tracking-wider">SHOW:</span>
+                    <select wire:model.live="perPage" class="no-custom-select bg-transparent border-0 text-xs sm:text-sm font-bold text-[#15803d] dark:text-emerald-400 focus:outline-none cursor-pointer pr-1">
                         <option value="10">10</option>
                         <option value="15">15</option>
                         <option value="25">25</option>
@@ -86,174 +88,348 @@
         </div>
 
         {{-- Table --}}
-        <div class="overflow-x-auto">
+        <div>
             @if($tab === 'sales')
-                <table class="w-full text-xs sm:text-sm text-left">
-                    <thead class="bg-[#15803d] text-white text-xs uppercase tracking-wider whitespace-nowrap">
-                        <tr>
-                            <th class="px-4 py-3">SL</th>
-                            <th class="px-4 py-3">RETURN DATE</th>
-                            <th class="px-4 py-3">INVOICE NO</th>
-                            <th class="px-4 py-3">CUSTOMER NAME</th>
-                            <th class="px-4 py-3">RETURNED PRODUCT</th>
-                            <th class="px-4 py-3 text-center">QTY</th>
-                            <th class="px-4 py-3 text-right">REFUND AMOUNT</th>
-                            <th class="px-4 py-3 text-right">ACTION</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-                        @forelse($salesReturns as $idx => $r)
-                            <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition">
-                                <td class="px-4 py-3 text-slate-500 font-medium">{{ $salesReturns->firstItem() + $idx }}</td>
-                                <td class="px-4 py-3 whitespace-nowrap font-medium text-slate-700 dark:text-slate-300">
-                                    <span class="inline-flex items-center gap-1.5">
-                                        <i class="fa-regular fa-calendar-check text-[#15803d]"></i>
-                                        {{ \Carbon\Carbon::parse($r->date)->format('M d, Y') }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <div class="space-y-1">
-                                        <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-black bg-[#15803d] text-white shadow-2xs">
-                                            <span>{{ str_starts_with((string)$r->return_number, '#') ? $r->return_number : '#'.$r->return_number }}</span>
+                <div class="table-responsive unified-ui-border hidden lg:block w-full max-w-full overflow-x-auto rounded-2xl shadow-2xs bg-white dark:bg-slate-900 mb-4">
+                    <table class="w-full text-xs sm:text-sm text-left border-collapse">
+                        <thead class="bg-[#15803d] text-white text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
+                            <tr>
+                                <th class="p-[10px] text-center w-[40px] rounded-tl-2xl">SL</th>
+                                <th class="p-[10px] text-start w-[120px]">RETURN DATE</th>
+                                <th class="p-[10px] text-start w-[130px]">INVOICE NO</th>
+                                <th class="p-[10px] text-start">CUSTOMER NAME</th>
+                                <th class="p-[10px] text-start">RETURNED PRODUCT</th>
+                                <th class="p-[10px] text-center w-[90px]">QTY</th>
+                                <th class="p-[10px] text-right w-[130px]">REFUND AMOUNT</th>
+                                <th class="p-[10px] text-center w-[110px] rounded-tr-2xl">ACTION</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                            @forelse($salesReturns as $idx => $r)
+                                <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition">
+                                    <td class="px-4 py-3 text-slate-500 font-medium">{{ $salesReturns->firstItem() + $idx }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap font-medium text-slate-700 dark:text-slate-300">
+                                        <span class="inline-flex items-center gap-1.5">
+                                            <i class="fa-regular fa-calendar-check text-[#15803d]"></i>
+                                            {{ \Carbon\Carbon::parse($r->date)->format('M d, Y') }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <div class="space-y-1">
+                                            <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-black bg-[#15803d] text-white shadow-2xs">
+                                                <span>{{ str_starts_with((string)$r->return_number, '#') ? $r->return_number : '#'.$r->return_number }}</span>
+                                            </div>
+                                            <div>
+                                                <a href="{{ route('battery.invoice.show', $r->order_id) }}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:underline border border-emerald-200 dark:border-emerald-800">
+                                                    <span>{{ str_starts_with((string)($r->order?->order_no ?? ''), '#') ? $r->order->order_no : '#'.($r->order?->order_no ?? '') }}</span>
+                                                    <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                                                </a>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <a href="{{ route('battery.invoice.show', $r->order_id) }}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:underline border border-emerald-200 dark:border-emerald-800">
-                                                <span>{{ str_starts_with((string)($r->order?->order_no ?? ''), '#') ? $r->order->order_no : '#'.($r->order?->order_no ?? '') }}</span>
-                                                <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-3 font-bold text-slate-900 dark:text-white">
-                                    @if($r->customer_id)
-                                        <a href="{{ route('battery.customer.profile', $r->customer_id) }}" class="text-slate-900 dark:text-white hover:text-emerald-600 hover:underline transition">
-                                            {{ $r->customer?->customer_name ?? '-' }}
-                                        </a>
-                                    @else
-                                        {{ $r->customer?->customer_name ?? '-' }}
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3 text-slate-700 dark:text-slate-300 font-medium">
-                                    {{ $r->product?->product_name ?? '-' }}
-                                </td>
-                                <td class="px-4 py-3 text-center whitespace-nowrap font-bold text-slate-700 dark:text-slate-300">
-                                    {{ (int)$r->quantity }} pcs
-                                </td>
-                                <td class="px-4 py-3 text-right font-black text-rose-600 dark:text-rose-400 tabular-nums whitespace-nowrap">
-                                    {{ Money::formatBd($r->amount) }}
-                                </td>
-                                <td class="px-4 py-3 text-right whitespace-nowrap">
-                                    <div class="inline-flex items-center gap-1.5">
-                                        {{-- 1: Quick View Eye Icon --}}
-                                        <button type="button" wire:click="openSummary({{ $r->id }})" class="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 dark:text-emerald-300 flex items-center justify-center border border-emerald-200 dark:border-emerald-800 cursor-pointer transition shadow-2xs" title="View Return Summary">
-                                            <i class="fa-regular fa-eye text-xs"></i>
-                                        </button>
-                                        {{-- 2: Print Return Memo --}}
-                                        <a href="{{ route('battery.return.show', $r->id) }}" target="_blank" class="w-8 h-8 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:hover:bg-sky-900/50 dark:text-sky-300 flex items-center justify-center border border-sky-200 dark:border-sky-800 cursor-pointer transition shadow-2xs" title="Print Return Memo">
-                                            <i class="fa-regular fa-file-lines text-xs"></i>
-                                        </a>
-                                        {{-- 3: Customer Profile Link --}}
+                                    </td>
+                                    <td class="px-4 py-3 font-bold text-slate-900 dark:text-white">
                                         @if($r->customer_id)
-                                            <a href="{{ route('battery.customer.profile', $r->customer_id) }}" class="w-8 h-8 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 dark:text-indigo-300 flex items-center justify-center border border-indigo-200 dark:border-indigo-800 cursor-pointer transition shadow-2xs" title="View Customer Profile">
+                                            <a href="{{ route('battery.customer.profile', $r->customer_id) }}" class="text-slate-900 dark:text-white hover:text-emerald-600 hover:underline transition">
+                                                {{ $r->customer?->customer_name ?? '-' }}
+                                            </a>
+                                        @else
+                                            {{ $r->customer?->customer_name ?? '-' }}
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-slate-700 dark:text-slate-300 font-medium">
+                                        {{ $r->product?->product_name ?? '-' }}
+                                    </td>
+                                    <td class="px-4 py-3 text-center whitespace-nowrap font-bold text-slate-700 dark:text-slate-300">
+                                        {{ (int)$r->quantity }} pcs
+                                    </td>
+                                    <td class="px-4 py-3 text-right font-black text-rose-600 dark:text-rose-400 tabular-nums whitespace-nowrap">
+                                        {{ Money::formatBd($r->amount) }}
+                                    </td>
+                                    <td class="px-4 py-3 text-right whitespace-nowrap">
+                                        <div class="inline-flex items-center gap-1.5">
+                                            {{-- 1: Quick View Eye Icon --}}
+                                            <button type="button" wire:click="openSummary({{ $r->id }})" class="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 dark:text-emerald-300 flex items-center justify-center border border-emerald-200 dark:border-emerald-800 cursor-pointer transition shadow-2xs" title="View Return Summary">
+                                                <i class="fa-regular fa-eye text-xs"></i>
+                                            </button>
+                                            {{-- 2: Print Return Memo --}}
+                                            <a href="{{ route('battery.return.show', $r->id) }}" target="_blank" class="w-8 h-8 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:hover:bg-sky-900/50 dark:text-sky-300 flex items-center justify-center border border-sky-200 dark:border-sky-800 cursor-pointer transition shadow-2xs" title="Print Return Memo">
+                                                <i class="fa-regular fa-file-lines text-xs"></i>
+                                            </a>
+                                            {{-- 3: Customer Profile Link --}}
+                                            @if($r->customer_id)
+                                                <a href="{{ route('battery.customer.profile', $r->customer_id) }}" class="w-8 h-8 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 dark:text-indigo-300 flex items-center justify-center border border-indigo-200 dark:border-indigo-800 cursor-pointer transition shadow-2xs" title="View Customer Profile">
                                                 <i class="fa-regular fa-user text-xs"></i>
                                             </a>
-                                        @endif
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="8" class="px-4 py-10 text-center text-slate-500 dark:text-slate-400">
+                                        <i class="fa-solid fa-rotate-left text-3xl mb-2 text-slate-300 dark:text-slate-600"></i>
+                                        <p class="m-0 text-sm">No sales return records found.</p>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                {{-- Mobile & Tablet Cards View (1 col on mobile, 2 cols on tablet) --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-3 p-3">
+                    @forelse($salesReturns as $idx => $r)
+                        <div class="unified-ui-border rounded-2xl p-3 sm:p-3.5 bg-white dark:bg-slate-800/90 shadow-2xs transition-all flex flex-col justify-between border border-slate-200 dark:border-slate-800">
+                            <div>
+                                <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800 gap-1.5 flex-wrap">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">#{{ $salesReturns->firstItem() + $idx }}</span>
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-black bg-[#15803d] text-white shadow-2xs">
+                                            {{ str_starts_with((string)$r->return_number, '#') ? $r->return_number : '#'.$r->return_number }}
+                                        </span>
+                                        <a href="{{ route('battery.invoice.show', $r->order_id) }}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:underline border border-emerald-200 dark:border-emerald-800">
+                                            <span>{{ str_starts_with((string)($r->order?->order_no ?? ''), '#') ? $r->order->order_no : '#'.($r->order?->order_no ?? '') }}</span>
+                                            <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                                        </a>
                                     </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8" class="px-4 py-10 text-center text-slate-500 dark:text-slate-400">
-                                    <i class="fa-solid fa-rotate-left text-3xl mb-2 text-slate-300 dark:text-slate-600"></i>
-                                    <p class="m-0 text-sm">No sales return records found.</p>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-                <div class="p-3.5 border-t border-slate-200 dark:border-slate-800">{{ $salesReturns->links() }}</div>
-            @else
-                <table class="w-full text-xs sm:text-sm text-left">
-                    <thead class="bg-[#15803d] text-white text-xs uppercase tracking-wider whitespace-nowrap">
-                        <tr>
-                            <th class="px-4 py-3">SL</th>
-                            <th class="px-4 py-3">RETURN DATE</th>
-                            <th class="px-4 py-3">PURCHASE NO</th>
-                            <th class="px-4 py-3">SUPPLIER NAME</th>
-                            <th class="px-4 py-3">RETURNED PRODUCT</th>
-                            <th class="px-4 py-3 text-center">QTY</th>
-                            <th class="px-4 py-3 text-right">REFUND AMOUNT</th>
-                            <th class="px-4 py-3 text-right">ACTION</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-                        @forelse($purchaseReturns as $idx => $r)
-                            <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition">
-                                <td class="px-4 py-3 text-slate-500 font-medium">{{ $purchaseReturns->firstItem() + $idx }}</td>
-                                <td class="px-4 py-3 whitespace-nowrap font-medium text-slate-700 dark:text-slate-300">
-                                    <span class="inline-flex items-center gap-1.5">
-                                        <i class="fa-regular fa-calendar-check text-[#15803d]"></i>
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                        <i class="fa-regular fa-calendar-check text-[#15803d] text-[10px]"></i>
                                         {{ \Carbon\Carbon::parse($r->date)->format('M d, Y') }}
                                     </span>
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <div class="space-y-1">
-                                        <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-black bg-[#15803d] text-white shadow-2xs">
-                                            <span>{{ str_starts_with((string)$r->return_number, '#') ? $r->return_number : '#'.$r->return_number }}</span>
-                                        </div>
-                                        <div>
-                                            <a href="{{ route('battery.purchase.show', $r->purchase_id) }}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:underline border border-emerald-200 dark:border-emerald-800">
-                                                <span>{{ str_starts_with((string)($r->purchase?->purchase_id ?? ''), '#') ? $r->purchase->purchase_id : '#'.($r->purchase?->purchase_id ?? '') }}</span>
-                                                <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                                </div>
+
+                                <div class="mb-2">
+                                    <h6 class="font-bold text-slate-800 dark:text-slate-100 mb-0.5 text-sm leading-snug">
+                                        @if($r->customer_id)
+                                            <a href="{{ route('battery.customer.profile', $r->customer_id) }}" class="text-slate-900 dark:text-white hover:text-emerald-600 hover:underline transition">
+                                                {{ $r->customer?->customer_name ?? '-' }}
                                             </a>
-                                        </div>
+                                        @else
+                                            {{ $r->customer?->customer_name ?? '-' }}
+                                        @endif
+                                    </h6>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                        <span class="font-medium text-slate-700 dark:text-slate-300">{{ $r->product?->product_name ?? '-' }}</span>
                                     </div>
-                                </td>
-                                <td class="px-4 py-3 font-bold text-slate-900 dark:text-white">
-                                    @if($r->supplier_id)
-                                        <a href="{{ route('battery.supplier.profile', $r->supplier_id) }}" class="text-slate-900 dark:text-white hover:text-emerald-600 hover:underline transition">
-                                            {{ $r->supplier?->name ?? '-' }}
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl my-2 text-center items-center border border-slate-100 dark:border-slate-800">
+                                    <div class="border-r border-slate-300 dark:border-slate-800 text-start px-2">
+                                        <span class="text-slate-400 block text-[9px] font-bold uppercase tracking-wider">Quantity</span>
+                                        <span class="font-bold text-slate-800 dark:text-slate-100 text-sm">{{ (int)$r->quantity }} pcs</span>
+                                    </div>
+                                    <div class="text-start px-2">
+                                        <span class="text-slate-400 block text-[9px] font-bold uppercase tracking-wider">Refund Amount</span>
+                                        <span class="font-extrabold text-rose-600 dark:text-rose-400 text-sm whitespace-nowrap tabular-nums">{{ Money::formatBd($r->amount) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 gap-2">
+                                <span class="text-[11px] text-slate-400 font-medium">Actions:</span>
+                                <div class="flex items-center gap-1.5">
+                                    <button type="button" wire:click="openSummary({{ $r->id }})" class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-600 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-2xs" title="Quick View">
+                                        <i class="fa-regular fa-eye text-xs"></i>
+                                    </button>
+                                    <a href="{{ route('battery.return.show', $r->id) }}" target="_blank" class="w-8 h-8 rounded-lg bg-sky-50 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-600 hover:text-white flex items-center justify-center transition-all shadow-2xs" title="Invoice">
+                                        <i class="fa-regular fa-file-lines text-xs"></i>
+                                    </a>
+                                    @if($r->customer_id)
+                                        <a href="{{ route('battery.customer.profile', $r->customer_id) }}" class="w-8 h-8 rounded-lg bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-600 hover:text-white flex items-center justify-center transition-all shadow-2xs" title="Profile">
+                                            <i class="fa-regular fa-user text-xs"></i>
                                         </a>
-                                    @else
-                                        {{ $r->supplier?->name ?? '-' }}
                                     @endif
-                                </td>
-                                <td class="px-4 py-3 text-slate-700 dark:text-slate-300 font-medium">
-                                    {{ $r->product?->product_name ?? '-' }}
-                                </td>
-                                <td class="px-4 py-3 text-center whitespace-nowrap font-bold text-slate-700 dark:text-slate-300">
-                                    {{ (int)$r->quantity }} pcs
-                                </td>
-                                <td class="px-4 py-3 text-right font-black text-rose-600 dark:text-rose-400 tabular-nums whitespace-nowrap">
-                                    {{ Money::formatBd($r->amount) }}
-                                </td>
-                                <td class="px-4 py-3 text-right whitespace-nowrap">
-                                    <div class="inline-flex items-center gap-1.5">
-                                        <button type="button" wire:click="openSummary({{ $r->id }})" class="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 dark:text-emerald-300 flex items-center justify-center border border-emerald-200 dark:border-emerald-800 cursor-pointer transition shadow-2xs" title="View Return Summary">
-                                            <i class="fa-regular fa-eye text-xs"></i>
-                                        </button>
-                                        <a href="{{ route('battery.purchase-return.show', $r->id) }}" target="_blank" class="w-8 h-8 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:hover:bg-sky-900/50 dark:text-sky-300 flex items-center justify-center border border-sky-200 dark:border-sky-800 cursor-pointer transition shadow-2xs" title="Print Return Memo">
-                                            <i class="fa-regular fa-file-lines text-xs"></i>
-                                        </a>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="col-span-full py-8 text-center text-slate-500">
+                            No sales return records found.
+                        </div>
+                    @endforelse
+                </div>
+                <div class="flex flex-col sm:flex-row items-center justify-between pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 gap-3">
+                    <div class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                        <span>Showing</span>
+                        <span class="font-bold text-slate-800 dark:text-slate-100 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">{{ $salesReturns->firstItem() ?? 0 }} – {{ $salesReturns->lastItem() ?? 0 }}</span>
+                        <span>of</span>
+                        <span class="font-bold text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-slate-700">{{ $salesReturns->total() }}</span>
+                        <span>returns</span>
+                    </div>
+                    <div class="w-full sm:w-auto flex items-center justify-center sm:justify-end">
+                        {{ $salesReturns->links() }}
+                    </div>
+                </div>
+            @else
+                <div class="table-responsive unified-ui-border hidden lg:block w-full max-w-full overflow-x-auto rounded-2xl shadow-2xs bg-white dark:bg-slate-900 mb-4">
+                    <table class="w-full text-xs sm:text-sm text-left border-collapse">
+                        <thead class="bg-[#15803d] text-white text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
+                            <tr>
+                                <th class="p-[10px] text-center w-[40px] rounded-tl-2xl">SL</th>
+                                <th class="p-[10px] text-start w-[120px]">RETURN DATE</th>
+                                <th class="p-[10px] text-start w-[130px]">PURCHASE NO</th>
+                                <th class="p-[10px] text-start">SUPPLIER NAME</th>
+                                <th class="p-[10px] text-start">RETURNED PRODUCT</th>
+                                <th class="p-[10px] text-center w-[90px]">QTY</th>
+                                <th class="p-[10px] text-right w-[130px]">REFUND AMOUNT</th>
+                                <th class="p-[10px] text-center w-[110px] rounded-tr-2xl">ACTION</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                            @forelse($purchaseReturns as $idx => $r)
+                                <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition">
+                                    <td class="px-4 py-3 text-slate-500 font-medium">{{ $purchaseReturns->firstItem() + $idx }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap font-medium text-slate-700 dark:text-slate-300">
+                                        <span class="inline-flex items-center gap-1.5">
+                                            <i class="fa-regular fa-calendar-check text-[#15803d]"></i>
+                                            {{ \Carbon\Carbon::parse($r->date)->format('M d, Y') }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <div class="space-y-1">
+                                            <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-black bg-[#15803d] text-white shadow-2xs">
+                                                <span>{{ str_starts_with((string)$r->return_number, '#') ? $r->return_number : '#'.$r->return_number }}</span>
+                                            </div>
+                                            <div>
+                                                <a href="{{ route('battery.purchase.show', $r->purchase_id) }}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:underline border border-emerald-200 dark:border-emerald-800">
+                                                    <span>{{ str_starts_with((string)($r->purchase?->purchase_id ?? ''), '#') ? $r->purchase->purchase_id : '#'.($r->purchase?->purchase_id ?? '') }}</span>
+                                                    <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 font-bold text-slate-900 dark:text-white">
                                         @if($r->supplier_id)
-                                            <a href="{{ route('battery.supplier.profile', $r->supplier_id) }}" class="w-8 h-8 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 flex items-center justify-center border border-indigo-200 dark:border-indigo-800 cursor-pointer transition shadow-2xs" title="View Supplier Profile">
+                                            <a href="{{ route('battery.supplier.profile', $r->supplier_id) }}" class="text-slate-900 dark:text-white hover:text-emerald-600 hover:underline transition">
+                                                {{ $r->supplier?->name ?? '-' }}
+                                            </a>
+                                        @else
+                                            {{ $r->supplier?->name ?? '-' }}
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-slate-700 dark:text-slate-300 font-medium">
+                                        {{ $r->product?->product_name ?? '-' }}
+                                    </td>
+                                    <td class="px-4 py-3 text-center whitespace-nowrap font-bold text-slate-700 dark:text-slate-300">
+                                        {{ (int)$r->quantity }} pcs
+                                    </td>
+                                    <td class="px-4 py-3 text-right font-black text-rose-600 dark:text-rose-400 tabular-nums whitespace-nowrap">
+                                        {{ Money::formatBd($r->amount) }}
+                                    </td>
+                                    <td class="px-4 py-3 text-right whitespace-nowrap">
+                                        <div class="inline-flex items-center gap-1.5">
+                                            <button type="button" wire:click="openSummary({{ $r->id }})" class="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 dark:text-emerald-300 flex items-center justify-center border border-emerald-200 dark:border-emerald-800 cursor-pointer transition shadow-2xs" title="View Return Summary">
+                                                <i class="fa-regular fa-eye text-xs"></i>
+                                            </button>
+                                            <a href="{{ route('battery.purchase-return.show', $r->id) }}" target="_blank" class="w-8 h-8 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:hover:bg-sky-900/50 dark:text-sky-300 flex items-center justify-center border border-sky-200 dark:border-sky-800 cursor-pointer transition shadow-2xs" title="Print Return Memo">
+                                                <i class="fa-regular fa-file-lines text-xs"></i>
+                                            </a>
+                                            @if($r->supplier_id)
+                                                <a href="{{ route('battery.supplier.profile', $r->supplier_id) }}" class="w-8 h-8 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 flex items-center justify-center border border-indigo-200 dark:border-indigo-800 cursor-pointer transition shadow-2xs" title="View Supplier Profile">
                                                 <i class="fa-regular fa-user text-xs"></i>
                                             </a>
-                                        @endif
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="8" class="px-4 py-10 text-center text-slate-500 dark:text-slate-400">
+                                        <i class="fa-solid fa-boxes-packing text-3xl mb-2 text-slate-300 dark:text-slate-600"></i>
+                                        <p class="m-0 text-sm">No purchase return records found.</p>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                {{-- Mobile & Tablet Cards View (1 col on mobile, 2 cols on tablet) --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-3 p-3">
+                    @forelse($purchaseReturns as $idx => $r)
+                        <div class="unified-ui-border rounded-2xl p-3 sm:p-3.5 bg-white dark:bg-slate-800/90 shadow-2xs transition-all flex flex-col justify-between border border-slate-200 dark:border-slate-800">
+                            <div>
+                                <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800 gap-1.5 flex-wrap">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">#{{ $purchaseReturns->firstItem() + $idx }}</span>
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-black bg-[#15803d] text-white shadow-2xs">
+                                            {{ str_starts_with((string)$r->return_number, '#') ? $r->return_number : '#'.$r->return_number }}
+                                        </span>
+                                        <a href="{{ route('battery.purchase.show', $r->purchase_id) }}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:underline border border-emerald-200 dark:border-emerald-800">
+                                            <span>{{ str_starts_with((string)($r->purchase?->purchase_id ?? ''), '#') ? $r->purchase->purchase_id : '#'.($r->purchase?->purchase_id ?? '') }}</span>
+                                            <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                                        </a>
                                     </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8" class="px-4 py-10 text-center text-slate-500 dark:text-slate-400">
-                                    <i class="fa-solid fa-boxes-packing text-3xl mb-2 text-slate-300 dark:text-slate-600"></i>
-                                    <p class="m-0 text-sm">No purchase return records found.</p>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-                <div class="p-3.5 border-t border-slate-200 dark:border-slate-800">{{ $purchaseReturns->links() }}</div>
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                        <i class="fa-regular fa-calendar-check text-[#15803d] text-[10px]"></i>
+                                        {{ \Carbon\Carbon::parse($r->date)->format('M d, Y') }}
+                                    </span>
+                                </div>
+
+                                <div class="mb-2">
+                                    <h6 class="font-bold text-slate-800 dark:text-slate-100 mb-0.5 text-sm leading-snug">
+                                        @if($r->supplier_id)
+                                            <a href="{{ route('battery.supplier.profile', $r->supplier_id) }}" class="text-slate-900 dark:text-white hover:text-emerald-600 hover:underline transition">
+                                                {{ $r->supplier?->name ?? '-' }}
+                                            </a>
+                                        @else
+                                            {{ $r->supplier?->name ?? '-' }}
+                                        @endif
+                                    </h6>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                        <span class="font-medium text-slate-700 dark:text-slate-300">{{ $r->product?->product_name ?? '-' }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl my-2 text-center items-center border border-slate-100 dark:border-slate-800">
+                                    <div class="border-r border-slate-300 dark:border-slate-800 text-start px-2">
+                                        <span class="text-slate-400 block text-[9px] font-bold uppercase tracking-wider">Quantity</span>
+                                        <span class="font-bold text-slate-800 dark:text-slate-100 text-sm">{{ (int)$r->quantity }} pcs</span>
+                                    </div>
+                                    <div class="text-start px-2">
+                                        <span class="text-slate-400 block text-[9px] font-bold uppercase tracking-wider">Refund Amount</span>
+                                        <span class="font-extrabold text-rose-600 dark:text-rose-400 text-sm whitespace-nowrap tabular-nums">{{ Money::formatBd($r->amount) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 gap-2">
+                                <span class="text-[11px] text-slate-400 font-medium">Actions:</span>
+                                <div class="flex items-center gap-1.5">
+                                    <button type="button" wire:click="openSummary({{ $r->id }})" class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-600 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-2xs" title="Quick View">
+                                        <i class="fa-regular fa-eye text-xs"></i>
+                                    </button>
+                                    <a href="{{ route('battery.purchase-return.show', $r->id) }}" target="_blank" class="w-8 h-8 rounded-lg bg-sky-50 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-600 hover:text-white flex items-center justify-center transition-all shadow-2xs" title="Invoice">
+                                        <i class="fa-regular fa-file-lines text-xs"></i>
+                                    </a>
+                                    @if($r->supplier_id)
+                                        <a href="{{ route('battery.supplier.profile', $r->supplier_id) }}" class="w-8 h-8 rounded-lg bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-600 hover:text-white flex items-center justify-center transition-all shadow-2xs" title="Profile">
+                                            <i class="fa-regular fa-user text-xs"></i>
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="col-span-full py-8 text-center text-slate-500">
+                            No purchase return records found.
+                        </div>
+                    @endforelse
+                </div>
+                <div class="flex flex-col sm:flex-row items-center justify-between pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 gap-3">
+                    <div class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                        <span>Showing</span>
+                        <span class="font-bold text-slate-800 dark:text-slate-100 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">{{ $purchaseReturns->firstItem() ?? 0 }} – {{ $purchaseReturns->lastItem() ?? 0 }}</span>
+                        <span>of</span>
+                        <span class="font-bold text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-slate-700">{{ $purchaseReturns->total() }}</span>
+                        <span>returns</span>
+                    </div>
+                    <div class="w-full sm:w-auto flex items-center justify-center sm:justify-end">
+                        {{ $purchaseReturns->links() }}
+                    </div>
+                </div>
             @endif
         </div>
     </div>
@@ -353,7 +529,7 @@
                         @if(!empty($returnLines))
                             <div class="space-y-2">
                                 <h4 class="text-xs font-black uppercase text-slate-500 tracking-wider mb-2.5">RETURNABLE ITEMS IN THIS ORDER:</h4>
-                                <div class="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-xl">
+                                <div class="hidden md:block overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-xl">
                                     <table class="w-full text-xs">
                                         <thead class="bg-[#15803d] text-white">
                                             <tr>
@@ -395,6 +571,60 @@
                                             @endforeach
                                         </tbody>
                                     </table>
+                                </div>
+
+                                {{-- Mobile & Tablet Box Cards (md:hidden) --}}
+                                <div class="space-y-2 md:hidden">
+                                    <div class="flex items-center justify-between pb-1.5 border-b border-slate-200 dark:border-slate-700 px-1">
+                                        <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 dark:text-slate-300">
+                                            <input type="checkbox" wire:model.live="selectAllLines" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer">
+                                            <span>Select All Items</span>
+                                        </label>
+                                    </div>
+                                    @foreach($returnLines as $idx => $line)
+                                        @php
+                                            $isChecked = !empty($line['checked']);
+                                            $rQty = $isChecked ? max(0, min((int)($line['return_qty'] ?? 0), (int)$line['max_qty'])) : 0;
+                                            $subtotal = $rQty * (float)$line['unit_price'];
+                                        @endphp
+                                        <div class="p-3 rounded-xl border {{ $isChecked ? 'border-emerald-300 bg-emerald-50/40 dark:border-emerald-700 dark:bg-emerald-950/20' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800' }} shadow-2xs space-y-2">
+                                            <div class="flex items-start justify-between gap-2">
+                                                <label class="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                                                    <input type="checkbox" wire:model.live="returnLines.{{ $idx }}.checked" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0">
+                                                    <span class="text-xs font-bold text-slate-900 dark:text-white break-words">{{ $line['product_name'] }}</span>
+                                                </label>
+                                                <span class="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300">
+                                                    Max: {{ $line['max_qty'] }} pcs
+                                                </span>
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 dark:bg-slate-900/60 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
+                                                <div>
+                                                    <span class="text-slate-400 block text-[10px]">Sold Qty:</span>
+                                                    <span class="font-semibold text-slate-700 dark:text-slate-300">{{ $line['sold_qty'] ?? $line['max_qty'] }} pcs</span>
+                                                </div>
+                                                <div class="text-right">
+                                                    <span class="text-slate-400 block text-[10px]">Unit Price:</span>
+                                                    <span class="font-semibold text-slate-700 dark:text-slate-300 tabular-nums">{{ Money::formatBd($line['unit_price']) }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center justify-between gap-2 pt-1">
+                                                <div class="flex items-center gap-1.5">
+                                                    <label class="text-[11px] font-bold text-slate-600 dark:text-slate-400">Return Qty:</label>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        max="{{ $line['max_qty'] }}"
+                                                        wire:model.live="returnLines.{{ $idx }}.return_qty"
+                                                        class="w-20 h-8 px-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-center font-bold text-xs outline-none focus:border-emerald-500"
+                                                    >
+                                                </div>
+                                                <div class="text-right">
+                                                    <span class="text-[10px] text-slate-400 block font-semibold">Subtotal:</span>
+                                                    <span class="font-black text-rose-600 dark:text-rose-400 text-xs tabular-nums">{{ Money::formatBd($subtotal) }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
                                 </div>
 
                                 {{-- Total Calculation Banner --}}

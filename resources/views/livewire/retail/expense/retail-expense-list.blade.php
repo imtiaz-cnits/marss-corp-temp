@@ -129,8 +129,8 @@
             </div>
         </div>
 
-        {{-- Table --}}
-        <div class="overflow-x-auto">
+        {{-- Desktop Table (Hidden on Mobile & Tablet) --}}
+        <div class="overflow-x-auto hidden lg:block">
             <table class="w-full text-xs sm:text-sm text-left">
                 <thead class="bg-[#15803d] text-white text-xs uppercase tracking-wider whitespace-nowrap">
                     <tr>
@@ -194,7 +194,77 @@
                 </tbody>
             </table>
         </div>
-        <div class="p-3.5 border-t border-slate-200 dark:border-slate-800">{{ $expenses->links() }}</div>
+
+        {{-- Mobile & Tablet Cards (1-col Mobile, 2-col Tablet) --}}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-3 mb-3 p-3">
+            @forelse($expenses as $idx => $e)
+                <div class="unified-ui-border rounded-2xl p-3.5 bg-white dark:bg-slate-800/90 shadow-2xs transition-all flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-[11px]">#{{ $expenses->firstItem() + $idx }}</span>
+                                <span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-slate-800 text-[11px] font-semibold">
+                                    <i class="fa-regular fa-calendar-check me-1 text-emerald-600"></i>{{ \Carbon\Carbon::parse($e->date)->format('d/m/Y') }}
+                                </span>
+                            </div>
+                            <div>
+                                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-slate-800">
+                                    {{ $e->expenseType?->type_name ?? 'General' }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                                @if($e->staff)
+                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-100 dark:border-indigo-900/40">
+                                        <i class="fa-regular fa-user text-[10px]"></i>{{ $e->staff->name }}
+                                    </span>
+                                @else
+                                    <span class="text-slate-400 dark:text-slate-500 font-medium text-xs">General Expense</span>
+                                @endif
+                            </div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                                <i class="fa-solid fa-align-left me-1 opacity-70"></i>{{ $e->expense_details ?: 'No details provided' }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2.5 mt-1 border-t border-slate-100 dark:border-slate-800">
+                        <div>
+                            <span class="text-slate-400 block text-[9px] font-bold uppercase tracking-wider">Amount</span>
+                            <span class="font-black text-rose-600 dark:text-rose-400 text-sm whitespace-nowrap tabular-nums">৳ {{ Money::formatBd($e->expense_amount) }}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" wire:click="openEdit({{ $e->id }})" class="w-8 h-8 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-600 hover:text-white border border-emerald-200 dark:bg-emerald-950/40 dark:border-slate-800 dark:text-emerald-400 flex items-center justify-center transition-all shadow-2xs cursor-pointer" title="Edit">
+                                <i class="fa-solid fa-pen-to-square text-xs"></i>
+                            </button>
+                            <button type="button" wire:click="confirmDelete({{ $e->id }})" class="w-8 h-8 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 dark:bg-rose-950/40 dark:border-slate-800 dark:text-rose-400 flex items-center justify-center transition-all shadow-2xs cursor-pointer" title="Delete">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="col-span-full p-8 text-center text-slate-400 dark:text-slate-500">
+                    <i class="fa-solid fa-receipt text-3xl mb-2 text-slate-300 dark:text-slate-600"></i>
+                    <p class="m-0 text-sm font-semibold">No expense records found.</p>
+                </div>
+            @endforelse
+        </div>
+        <div class="flex flex-col sm:flex-row items-center justify-between p-3.5 border-t border-slate-200 dark:border-slate-800 gap-3">
+            <div class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                <span>Showing</span>
+                <span class="font-bold text-slate-800 dark:text-slate-100 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">{{ $expenses->firstItem() ?? 0 }} – {{ $expenses->lastItem() ?? 0 }}</span>
+                <span>of</span>
+                <span class="font-bold text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-slate-700">{{ $expenses->total() }}</span>
+                <span>expenses</span>
+            </div>
+            <div class="w-full sm:w-auto flex items-center justify-center sm:justify-end">
+                {{ $expenses->links() }}
+            </div>
+        </div>
     </div>
 
     {{-- CREATE EXPENSE MODAL (1:1 Reference Screenshot 2 & Images 2, 3, 4) --}}

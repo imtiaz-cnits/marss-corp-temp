@@ -251,7 +251,7 @@
                         <li><a href="{{ route('settings.users') }}" wire:navigate class="sidebar-flyout-link {{ request()->routeIs('settings.users') ? 'active-flyout-link' : '' }}"><i class="fa-solid fa-user-gear text-[10px] text-emerald-300/80 w-4 text-center"></i><span>User List &amp; Roles</span></a></li>
                         @endif
                         <li><a href="{{ route('settings.profile') }}" wire:navigate class="sidebar-flyout-link {{ request()->routeIs('settings.profile') ? 'active-flyout-link' : '' }}"><i class="fa-solid fa-circle-user text-[10px] text-emerald-300/80 w-4 text-center"></i><span>Profile</span></a></li>
-                        @if($user->isDeveloper())
+                        @if($user->isAdmin())
                         <li><a href="{{ route('settings.activity-log') }}" wire:navigate class="sidebar-flyout-link {{ request()->routeIs('settings.activity-log') ? 'active-flyout-link' : '' }}"><i class="fa-solid fa-clock-rotate-left text-[10px] text-emerald-300/80 w-4 text-center"></i><span>User Activity Log</span></a></li>
                         @endif
                     </ul>
@@ -333,7 +333,7 @@
             <li><a href="{{ route('settings.users') }}" wire:navigate class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl {{ request()->routeIs('settings.users') ? 'bg-white/20 text-white font-semibold' : 'text-slate-200 hover:bg-white/10 hover:text-white' }}"><i class="fa-solid fa-user-gear w-4 text-center text-emerald-300"></i><span>User List &amp; Roles</span></a></li>
             @endif
             <li><a href="{{ route('settings.profile') }}" wire:navigate class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl {{ request()->routeIs('settings.profile') ? 'bg-white/20 text-white font-semibold' : 'text-slate-200 hover:bg-white/10 hover:text-white' }}"><i class="fa-solid fa-circle-user w-4 text-center text-emerald-300"></i><span>Profile</span></a></li>
-            @if($user->isDeveloper())
+            @if($user->isAdmin())
             <li><a href="{{ route('settings.activity-log') }}" wire:navigate class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl {{ request()->routeIs('settings.activity-log') ? 'bg-white/20 text-white font-semibold' : 'text-slate-200 hover:bg-white/10 hover:text-white' }}"><i class="fa-solid fa-clock-rotate-left w-4 text-center text-emerald-300"></i><span>User Activity Log</span></a></li>
             @endif
         </ul>

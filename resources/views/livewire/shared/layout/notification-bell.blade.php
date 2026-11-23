@@ -17,7 +17,7 @@
         x-show="open"
         x-transition
         style="display: none;"
-        class="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white dark:bg-slate-900 border-[1.5px] border-slate-300 dark:border-slate-700 shadow-2xl overflow-hidden z-50"
+        class="fixed left-4 right-4 top-[64px] sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-96 rounded-2xl bg-white dark:bg-slate-900 border-[1.5px] border-slate-300 dark:border-slate-700 shadow-2xl overflow-hidden z-50"
     >
         <div class="px-4 py-3 bg-emerald-700 text-white flex items-center justify-between">
             <span class="text-xs font-bold uppercase tracking-wider">

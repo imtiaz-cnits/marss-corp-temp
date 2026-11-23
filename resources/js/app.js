@@ -609,21 +609,77 @@ document.addEventListener('livewire:navigated', () => {
 window.marssExport = {
     extractTableData(tableId) {
         const table = document.getElementById(tableId) || document.querySelector('table');
-        if (!table) return { headers: [], rows: [], footers: [] };
+        if (!table) return { headers: [], rows: [], footers: [], rawHeaders: [], rawRows: [], rawFooters: [] };
         const skipLast = table.dataset.exportSkipLast === 'true';
+
+        const parseCell = (c) => {
+            const text = (c.innerText || '').replace(/\s+/g, ' ').trim();
+            const rawSpan = parseInt(c.getAttribute('colspan') || c.colSpan || '1', 10);
+            const colSpan = isNaN(rawSpan) || rawSpan < 1 ? 1 : rawSpan;
+            const isAmt = text.includes('৳') || text.includes('$');
+            return { text, colSpan, isAmt, tag: c.tagName.toLowerCase() };
+        };
+
         const getCells = (tr) => {
             const cells = Array.from(tr.querySelectorAll('th, td'));
             const lastText = (cells[cells.length - 1]?.innerText || '').trim().toLowerCase();
             const shouldDropLast = skipLast || lastText === 'action' || lastText === 'actions';
             const usable = shouldDropLast && cells.length > 1 ? cells.slice(0, -1) : cells;
-            return usable.map((c) => (c.innerText || '').replace(/\s+/g, ' ').trim());
+            return usable.map(parseCell);
         };
-        const headers = Array.from(table.querySelectorAll('thead tr')).map(getCells);
-        const rows = Array.from(table.querySelectorAll('tbody tr'))
+
+        const rawHeaders = Array.from(table.querySelectorAll('thead tr')).map(getCells);
+        const rawRows = Array.from(table.querySelectorAll('tbody tr'))
             .filter((tr) => !tr.dataset.emptyRow && tr.querySelectorAll('td').length > 1)
             .map(getCells);
-        const footers = Array.from(table.querySelectorAll('tfoot tr')).map(getCells);
-        return { headers, rows, footers };
+
+        // Header total columns (sum of header colSpans)
+        const headerTotalCols = rawHeaders.length > 0
+            ? rawHeaders[0].reduce((acc, c) => acc + c.colSpan, 0)
+            : 0;
+
+        const rawFooters = Array.from(table.querySelectorAll('tfoot tr')).map((tr) => {
+            const cells = Array.from(tr.querySelectorAll('th, td')).map(parseCell);
+            if (headerTotalCols <= 0) return cells;
+
+            const sumSpan = cells.reduce((acc, c) => acc + c.colSpan, 0);
+            if (sumSpan > headerTotalCols) {
+                // Adjust the last cell or trailing cells so total span matches header exactly
+                let excess = sumSpan - headerTotalCols;
+                for (let i = cells.length - 1; i >= 0 && excess > 0; i--) {
+                    if (cells[i].colSpan > 1) {
+                        const reduceBy = Math.min(excess, cells[i].colSpan - 1);
+                        cells[i].colSpan -= reduceBy;
+                        excess -= reduceBy;
+                    }
+                }
+                while (excess > 0 && cells.length > 1) {
+                    cells.pop();
+                    excess--;
+                }
+            } else if (sumSpan < headerTotalCols && cells.length > 0) {
+                cells[0].colSpan += (headerTotalCols - sumSpan);
+            }
+            return cells;
+        });
+
+        // Flatten to string arrays for clipboard and CSV with alignment
+        const flattenRow = (cellObjects) => {
+            const out = [];
+            for (const c of cellObjects) {
+                out.push(c.text);
+                for (let i = 1; i < c.colSpan; i++) {
+                    out.push('');
+                }
+            }
+            return out;
+        };
+
+        const headers = rawHeaders.map(flattenRow);
+        const rows = rawRows.map(flattenRow);
+        const footers = rawFooters.map(flattenRow);
+
+        return { headers, rows, footers, rawHeaders, rawRows, rawFooters };
     },
     copy(tableId) {
         const { headers, rows, footers } = this.extractTableData(tableId);
@@ -640,22 +696,147 @@ window.marssExport = {
         this._download(blob, `${filename}.csv`);
     },
     excel(tableId, filename = 'marss-report', title = 'MARSS CORPORATION') {
-        const { headers, rows, footers } = this.extractTableData(tableId);
-        const renderRows = (list, tag) => list.map((r) => `<tr>${r.map((c) => `<${tag} style="border:1px solid #cbd5e1;padding:6px;">${c}</${tag}>`).join('')}</tr>`).join('');
-        const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><h3>${title}</h3><table style="border-collapse:collapse;"><thead>${renderRows(headers, 'th')}</thead><tbody>${renderRows(rows, 'td')}</tbody><tfoot>${renderRows(footers, 'th')}</tfoot></table></body></html>`;
+        const { headers, rows, rawHeaders, rawRows, rawFooters } = this.extractTableData(tableId);
+        const renderExcelRows = (list, tag) => list.map((r) =>
+            `<tr>${r.map((c) => {
+                const spanAttr = c.colSpan > 1 ? ` colspan="${c.colSpan}"` : '';
+                const align = (c.isAmt || c.colSpan > 1) ? 'text-align:right;' : '';
+                return `<${tag}${spanAttr} style="border:1px solid #cbd5e1;padding:6px;${align}">${c.text}</${tag}>`;
+            }).join('')}</tr>`
+        ).join('');
+
+        const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><h3>${title}</h3><table style="border-collapse:collapse;"><thead>${renderExcelRows(rawHeaders, 'th')}</thead><tbody>${renderExcelRows(rawRows, 'td')}</tbody><tfoot>${renderExcelRows(rawFooters, 'th')}</tfoot></table></body></html>`;
         const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
         this._download(blob, `${filename}.xls`);
     },
+    pdf(tableId, filename = 'marss-report', title = 'MARSS CORPORATION') {
+        const { headers, rows, rawFooters } = this.extractTableData(tableId);
+        if (!rows.length && !headers.length) {
+            window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'No table data to export!' } }));
+            return;
+        }
+        try {
+            const isWide = (headers[0] || []).length > 6;
+            const doc = new jsPDF({
+                orientation: isWide ? 'landscape' : 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const dateStr = new Date().toLocaleDateString('en-GB');
+
+            // Header banner
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(14);
+            doc.setTextColor(21, 128, 61);
+            doc.text('MARSS CORPORATION', 14, 14);
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(71, 85, 105);
+            doc.text(`${title}  |  Generated: ${dateStr}`, 14, 20);
+
+            // Build foot structure with colSpan & styles for jspdf-autotable
+            const foot = rawFooters.map((row) =>
+                row.map((c) => ({
+                    content: c.text,
+                    colSpan: c.colSpan,
+                    styles: {
+                        halign: (c.isAmt || c.colSpan > 1) ? 'right' : 'left',
+                        fontStyle: 'bold',
+                        textColor: [15, 23, 42],
+                    }
+                }))
+            );
+
+            // Table styling
+            autoTable(doc, {
+                head: headers,
+                body: rows,
+                foot: foot.length ? foot : undefined,
+                startY: 24,
+                theme: 'grid',
+                styles: {
+                    font: 'helvetica',
+                    fontSize: 8,
+                    cellPadding: 2,
+                    textColor: [15, 23, 42],
+                    lineColor: [203, 213, 225],
+                    lineWidth: 0.15,
+                },
+                headStyles: {
+                    fillColor: [21, 128, 61],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 8,
+                    halign: 'left',
+                },
+                footStyles: {
+                    fillColor: [241, 245, 249],
+                    textColor: [15, 23, 42],
+                    fontStyle: 'bold',
+                    fontSize: 8,
+                },
+                alternateRowStyles: {
+                    fillColor: [248, 250, 252],
+                },
+                margin: { left: 14, right: 14 },
+                didDrawPage: (data) => {
+                    doc.setFontSize(8);
+                    doc.setTextColor(148, 163, 184);
+                    doc.text(
+                        `Page ${doc.internal.getNumberOfPages()}`,
+                        pageWidth - 25,
+                        doc.internal.pageSize.getHeight() - 10
+                    );
+                }
+            });
+
+            // Signatures
+            const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 180;
+            const pageHeight = doc.internal.pageSize.getHeight();
+            let sigY = finalY + 22;
+            if (sigY > pageHeight - 20) {
+                doc.addPage();
+                sigY = 40;
+            }
+            doc.setFontSize(8.5);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(15, 23, 42);
+
+            const col1 = 20;
+            const col2 = pageWidth / 2 - 20;
+            const col3 = pageWidth - 60;
+
+            doc.setDrawColor(15, 23, 42);
+            doc.setLineWidth(0.3);
+            doc.line(col1, sigY - 5, col1 + 40, sigY - 5);
+            doc.line(col2, sigY - 5, col2 + 40, sigY - 5);
+            doc.line(col3, sigY - 5, col3 + 40, sigY - 5);
+
+            doc.text('Cashier', col1 + 8, sigY);
+            doc.text('Accountant', col2 + 6, sigY);
+            doc.text('Authorized Signatory', col3 - 2, sigY);
+
+            doc.save(`${filename}.pdf`);
+            window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: 'PDF downloaded successfully!' } }));
+        } catch (e) {
+            console.error('PDF generation error:', e);
+            window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'error', message: 'Failed to generate PDF. Opening print preview...' } }));
+            this.printTable(tableId, title);
+        }
+    },
     printTable(tableId, title = 'MARSS CORPORATION Report') {
-        const { headers, rows, footers } = this.extractTableData(tableId);
+        const { rawHeaders, rawRows, rawFooters } = this.extractTableData(tableId);
         const win = window.open('', '_blank', 'width=960,height=720');
         if (!win) {
             window.print();
             return;
         }
         const renderRows = (list, tag) => list.map((r) => `<tr>${r.map((c) => {
-            const isAmt = String(c).includes('৳');
-            return `<${tag}${isAmt ? ' class="amt"' : ''}>${c}</${tag}>`;
+            const alignClass = (c.isAmt || c.colSpan > 1) ? ' class="amt"' : '';
+            const spanAttr = c.colSpan > 1 ? ` colspan="${c.colSpan}"` : '';
+            return `<${tag}${spanAttr}${alignClass}>${c.text}</${tag}>`;
         }).join('')}</tr>`).join('');
         win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>
             @page { size: A4 portrait; margin: 16px; }
@@ -684,7 +865,7 @@ window.marssExport = {
                     <tr>
                         <td>
                             <div class="hdr"><h2>MARSS CORPORATION</h2><p>${title} — Printed ${new Date().toLocaleString()}</p></div>
-                            <table class="data-table"><thead>${renderRows(headers, 'th')}</thead><tbody>${renderRows(rows, 'td')}</tbody><tfoot>${renderRows(footers, 'th')}</tfoot></table>
+                            <table class="data-table"><thead>${renderRows(rawHeaders, 'th')}</thead><tbody>${renderRows(rawRows, 'td')}</tbody><tfoot>${renderRows(rawFooters, 'th')}</tfoot></table>
                         </td>
                     </tr>
                 </tbody>

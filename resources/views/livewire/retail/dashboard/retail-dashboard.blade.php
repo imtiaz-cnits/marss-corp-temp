@@ -131,145 +131,123 @@
         </div>
     </div>
 
-    {{-- Row 1: 4 Main Financial Cards (INCOME, CASH COLLECTION, EXPENSE, PROFIT) --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+    {{-- Row 1: Main Financial Cards (Image 2 1:1 Parity) --}}
+    <div class="grid grid-cols-1 sm:grid-cols-2 {{ $canViewProfit ? 'xl:grid-cols-4' : 'xl:grid-cols-3' }} gap-3">
         {{-- Card 1: Income --}}
         <div class="bg-white dark:bg-[#0f172a] border border-[#f1f5f9] dark:border-[#1e293b] rounded-[14px] p-4 shadow-2xs">
-            <div class="flex items-start justify-between mb-3">
+            <div class="flex items-start justify-between mb-2">
                 <div>
                     <p class="text-[11px] font-bold uppercase tracking-wider text-[#64748b] dark:text-slate-400 m-0 mb-1">INCOME</p>
                     <h3 class="text-[22px] font-bold text-[#1e293b] dark:text-white m-0 tabular-nums">{{ Money::formatBd($b['sales_amount']) }}</h3>
                 </div>
-                <div class="w-[42px] h-[42px] rounded-[10px] bg-[#d1fae5] dark:bg-emerald-950/60 text-[#059669] dark:text-emerald-400 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-sack-dollar text-lg"></i>
+                <div class="w-[38px] h-[38px] rounded-[10px] bg-[#e0f2fe] dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-400 flex items-center justify-center shrink-0">
+                    <i class="fa-regular fa-money-bill-1 text-base"></i>
                 </div>
             </div>
-            <div class="flex items-center gap-1.5">
-                <span class="px-2 py-1 rounded-[6px] bg-[#ecfdf5] dark:bg-emerald-950/50 text-[#059669] dark:text-emerald-300 text-[11px] font-semibold inline-flex items-center gap-1">
-                    <i class="fa-solid fa-file-invoice"></i>
-                    <span>{{ $b['sales_count'] }} Invoices (Net Sales)</span>
-                </span>
+            <div class="flex items-center gap-1.5 text-xs text-sky-600 dark:text-sky-400 font-medium">
+                <i class="fa-solid fa-arrow-trend-up text-[10px]"></i>
+                <span>Total Sales Revenue</span>
             </div>
         </div>
 
         {{-- Card 2: Cash Collection --}}
         <div class="bg-white dark:bg-[#0f172a] border border-[#f1f5f9] dark:border-[#1e293b] rounded-[14px] p-4 shadow-2xs">
-            <div class="flex items-start justify-between mb-3">
+            <div class="flex items-start justify-between mb-2">
                 <div>
                     <p class="text-[11px] font-bold uppercase tracking-wider text-[#64748b] dark:text-slate-400 m-0 mb-1">CASH COLLECTION</p>
                     <h3 class="text-[22px] font-bold text-[#1e293b] dark:text-white m-0 tabular-nums">{{ Money::formatBd($b['cash_collection']) }}</h3>
                 </div>
-                <div class="w-[42px] h-[42px] rounded-[10px] bg-[#e0f2fe] dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-400 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-hand-holding-dollar text-lg"></i>
+                <div class="w-[38px] h-[38px] rounded-[10px] bg-[#dcfce7] dark:bg-emerald-950/60 text-[#16a34a] dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-wallet text-base"></i>
                 </div>
             </div>
-            <div class="flex items-center gap-1.5">
-                <span class="px-2 py-1 rounded-[6px] bg-[#f0f9ff] dark:bg-sky-950/50 text-[#0284c7] dark:text-sky-300 text-[11px] font-semibold inline-flex items-center gap-1">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <span>Received in Hand</span>
-                </span>
+            <div class="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                <i class="fa-solid fa-arrow-trend-up text-[10px]"></i>
+                <span>Paid at Counter &amp; Dues</span>
             </div>
         </div>
 
         {{-- Card 3: Expense --}}
         <div class="bg-white dark:bg-[#0f172a] border border-[#f1f5f9] dark:border-[#1e293b] rounded-[14px] p-4 shadow-2xs">
-            <div class="flex items-start justify-between mb-3">
+            <div class="flex items-start justify-between mb-2">
                 <div>
                     <p class="text-[11px] font-bold uppercase tracking-wider text-[#64748b] dark:text-slate-400 m-0 mb-1">EXPENSE</p>
                     <h3 class="text-[22px] font-bold text-[#1e293b] dark:text-white m-0 tabular-nums">{{ Money::formatBd($b['expense']) }}</h3>
                 </div>
-                <div class="w-[42px] h-[42px] rounded-[10px] bg-[#ffe4e6] dark:bg-rose-950/60 text-[#e11d48] dark:text-rose-400 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-money-bill-transfer text-lg"></i>
+                <div class="w-[38px] h-[38px] rounded-[10px] bg-[#fef3c7] dark:bg-amber-950/60 text-[#d97706] dark:text-amber-400 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-circle-exclamation text-base"></i>
                 </div>
             </div>
-            <div class="flex items-center gap-1.5">
-                <span class="px-2 py-1 rounded-[6px] bg-[#fff1f2] dark:bg-rose-950/50 text-[#e11d48] dark:text-rose-300 text-[11px] font-semibold inline-flex items-center gap-1">
-                    <i class="fa-solid fa-arrow-trend-down"></i>
-                    <span>Costs &amp; Payments</span>
-                </span>
+            <div class="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                <i class="fa-regular fa-clock text-[10px]"></i>
+                <span>Operating Expenses</span>
             </div>
         </div>
 
-        {{-- Card 4: Profit (Admin) --}}
-        <div class="bg-white dark:bg-[#0f172a] border border-[#f1f5f9] dark:border-[#1e293b] rounded-[14px] p-4 shadow-2xs">
-            <div class="flex items-start justify-between mb-3">
-                <div>
-                    <p class="text-[11px] font-bold uppercase tracking-wider text-[#64748b] dark:text-slate-400 m-0 mb-1">
-                        {{ $canViewProfit ? 'PROFIT' : 'PERIOD DUE' }}
-                    </p>
-                    <h3 class="text-[22px] font-bold text-[#1e293b] dark:text-white m-0 tabular-nums">
-                        {{ Money::formatBd($canViewProfit ? $b['net_profit'] : $b['customer_due']) }}
-                    </h3>
+        {{-- Card 4: Profit (Visible only to Admin / Super Admin / Developer) --}}
+        @if($canViewProfit)
+            <div class="bg-white dark:bg-[#0f172a] border border-[#f1f5f9] dark:border-[#1e293b] rounded-[14px] p-4 shadow-2xs">
+                <div class="flex items-start justify-between mb-2">
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-[#64748b] dark:text-slate-400 m-0 mb-1">PROFIT</p>
+                        <h3 class="text-[22px] font-bold text-[#1e293b] dark:text-white m-0 tabular-nums">{{ Money::formatBd($b['net_profit']) }}</h3>
+                    </div>
+                    <div class="w-[38px] h-[38px] rounded-[10px] bg-[#e0f2fe] dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-400 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-chart-line text-base"></i>
+                    </div>
                 </div>
-                <div class="w-[42px] h-[42px] rounded-[10px] bg-[#ede9fe] dark:bg-purple-950/60 text-[#7c3aed] dark:text-purple-400 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-chart-pie text-lg"></i>
+                <div class="flex items-center gap-1.5 text-xs text-sky-600 dark:text-sky-400 font-medium">
+                    <i class="fa-solid fa-arrow-trend-up text-[10px]"></i>
+                    <span>Net Business Profit</span>
+                    <span class="sr-only">Net Profit (Admin)</span>
                 </div>
             </div>
-            <div class="flex items-center gap-1.5">
-                <span class="px-2 py-1 rounded-[6px] bg-[#f5f3ff] dark:bg-purple-950/50 text-[#7c3aed] dark:text-purple-300 text-[11px] font-semibold inline-flex items-center gap-1">
-                    <i class="fa-solid fa-coins"></i>
-                    <span>{{ $canViewProfit ? 'Net Earnings' : 'Unpaid Invoices' }}</span>
-                    @if($canViewProfit)<span class="sr-only">Net Profit (Admin)</span>@endif
-                </span>
-            </div>
-        </div>
+        @endif
     </div>
 
     {{-- Row 2: 4 Secondary Metric Cards (RECEIVABLE DUE, PAYABLE DUE, RETURN, DISCOUNT) --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         {{-- Card 5: Receivable Due --}}
-        <div class="bg-white dark:bg-[#0f172a] border border-[#f1f5f9] dark:border-[#1e293b] rounded-[14px] p-4 shadow-2xs">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-[11px] font-bold uppercase tracking-wider text-[#64748b] dark:text-slate-400 m-0 mb-1">RECEIVABLE DUE</p>
-                    <h4 class="text-[19px] font-bold text-[#1e293b] dark:text-white m-0 tabular-nums">{{ Money::formatBd($b['customer_due']) }}</h4>
-                    <span class="text-[11px] text-[#94a3b8]">Customer unpaid balance</span>
-                </div>
-                <div class="w-[38px] h-[38px] rounded-[10px] bg-[#fef3c7] dark:bg-amber-950/60 text-[#d97706] dark:text-amber-400 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-user-clock text-sm"></i>
-                </div>
+        <div class="bg-white dark:bg-[#0f172a] border border-[#f1f5f9] dark:border-[#1e293b] rounded-[14px] p-4 shadow-2xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-[#64748b] dark:text-slate-400 m-0 mb-1">RECEIVABLE DUE</p>
+                <h4 class="text-[19px] font-bold text-[#1e293b] dark:text-white m-0 tabular-nums">{{ Money::formatBd($b['customer_due']) }}</h4>
+            </div>
+            <div class="w-[38px] h-[38px] rounded-[10px] bg-[#fef3c7] dark:bg-amber-950/60 text-[#d97706] dark:text-amber-400 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-users text-sm"></i>
             </div>
         </div>
 
         {{-- Card 6: Payable Due --}}
-        <div class="bg-white dark:bg-[#0f172a] border border-[#f1f5f9] dark:border-[#1e293b] rounded-[14px] p-4 shadow-2xs">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-[11px] font-bold uppercase tracking-wider text-[#64748b] dark:text-slate-400 m-0 mb-1">PAYABLE DUE</p>
-                    <h4 class="text-[19px] font-bold text-[#1e293b] dark:text-white m-0 tabular-nums">{{ Money::formatBd($f['supplier_payable']) }}</h4>
-                    <span class="text-[11px] text-[#94a3b8]">Supplier unpaid balance</span>
-                </div>
-                <div class="w-[38px] h-[38px] rounded-[10px] bg-[#ffedd5] dark:bg-orange-950/60 text-[#ea580c] dark:text-orange-400 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-truck-ramp-box text-sm"></i>
-                </div>
+        <div class="bg-white dark:bg-[#0f172a] border border-[#f1f5f9] dark:border-[#1e293b] rounded-[14px] p-4 shadow-2xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-[#64748b] dark:text-slate-400 m-0 mb-1">PAYABLE DUE</p>
+                <h4 class="text-[19px] font-bold text-[#1e293b] dark:text-white m-0 tabular-nums">{{ Money::formatBd($f['supplier_payable']) }}</h4>
+            </div>
+            <div class="w-[38px] h-[38px] rounded-[10px] bg-[#e0e7ff] dark:bg-indigo-950/60 text-[#4f46e5] dark:text-indigo-400 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-truck-moving text-sm"></i>
             </div>
         </div>
 
         {{-- Card 7: Return --}}
-        <div class="bg-white dark:bg-[#0f172a] border border-[#f1f5f9] dark:border-[#1e293b] rounded-[14px] p-4 shadow-2xs">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-[11px] font-bold uppercase tracking-wider text-[#64748b] dark:text-slate-400 m-0 mb-1">RETURN</p>
-                    <h4 class="text-[19px] font-bold text-[#1e293b] dark:text-white m-0 tabular-nums">{{ Money::formatBd($b['return_amount']) }}</h4>
-                    <span class="text-[11px] text-[#94a3b8]">Customer returned items</span>
-                </div>
-                <div class="w-[38px] h-[38px] rounded-[10px] bg-[#f1f5f9] dark:bg-slate-800 text-[#475569] dark:text-slate-300 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-rotate-left text-sm"></i>
-                </div>
+        <div class="bg-white dark:bg-[#0f172a] border border-[#f1f5f9] dark:border-[#1e293b] rounded-[14px] p-4 shadow-2xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-[#64748b] dark:text-slate-400 m-0 mb-1">RETURN</p>
+                <h4 class="text-[19px] font-bold text-[#1e293b] dark:text-white m-0 tabular-nums">{{ Money::formatBd($b['return_amount']) }}</h4>
+            </div>
+            <div class="w-[38px] h-[38px] rounded-[10px] bg-[#ffe4e6] dark:bg-rose-950/60 text-[#e11d48] dark:text-rose-400 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-rotate-left text-sm"></i>
             </div>
         </div>
 
         {{-- Card 8: Discount --}}
-        <div class="bg-white dark:bg-[#0f172a] border border-[#f1f5f9] dark:border-[#1e293b] rounded-[14px] p-4 shadow-2xs">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-[11px] font-bold uppercase tracking-wider text-[#64748b] dark:text-slate-400 m-0 mb-1">DISCOUNT</p>
-                    <h4 class="text-[19px] font-bold text-[#1e293b] dark:text-white m-0 tabular-nums">{{ Money::formatBd($b['discount_amount']) }}</h4>
-                    <span class="text-[11px] text-[#94a3b8]">Total discount granted</span>
-                </div>
-                <div class="w-[38px] h-[38px] rounded-[10px] bg-[#fce7f3] dark:bg-pink-950/60 text-[#db2777] dark:text-pink-400 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-tags text-sm"></i>
-                </div>
+        <div class="bg-white dark:bg-[#0f172a] border border-[#f1f5f9] dark:border-[#1e293b] rounded-[14px] p-4 shadow-2xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-[#64748b] dark:text-slate-400 m-0 mb-1">DISCOUNT</p>
+                <h4 class="text-[19px] font-bold text-[#1e293b] dark:text-white m-0 tabular-nums">{{ Money::formatBd($b['discount_amount']) }}</h4>
+            </div>
+            <div class="w-[38px] h-[38px] rounded-[10px] bg-[#f3e8ff] dark:bg-purple-950/60 text-[#9333ea] dark:text-purple-400 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-percent text-sm"></i>
             </div>
         </div>
     </div>
@@ -556,7 +534,7 @@
                     View All Stock
                 </a>
             </div>
-            <div class="overflow-x-auto max-h-[340px]">
+            <div class="hidden lg:block overflow-x-auto max-h-[340px]">
                 <table class="w-full text-[13px] text-left border-collapse">
                     <thead class="sticky top-0 z-10 bg-[#f8fafc] dark:bg-slate-800 text-[#475569] dark:text-slate-300 text-[12px] font-semibold border-b border-slate-100 dark:border-slate-700">
                         <tr>
@@ -601,6 +579,41 @@
                     </tbody>
                 </table>
             </div>
+
+            {{-- Mobile & Tablet Cards View (1 col mobile, 2 col tablet) --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-2.5 max-h-[360px] overflow-y-auto pr-1">
+                @forelse($metrics['low_stock_products'] ?? [] as $p)
+                    @php
+                        $q = (int) round((float) ($p->quantity ?? 0));
+                        $pCode = $p->primaryCode();
+                    @endphp
+                    <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs space-y-2">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <h6 class="text-xs font-bold text-slate-800 dark:text-white leading-tight break-words">{{ $p->product_name }}</h6>
+                                <span class="inline-block mt-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono text-[10px] font-semibold break-all">
+                                    {{ $pCode ?: 'N/A' }}
+                                </span>
+                            </div>
+                            <span class="inline-flex shrink-0 items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold text-white {{ $q <= 0 ? 'bg-[#ef4444]' : 'bg-[#f59e0b]' }}">
+                                {{ $q }} pcs
+                            </span>
+                        </div>
+                        <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end">
+                            <a
+                                href="{{ route('retail.purchases') }}"
+                                wire:navigate
+                                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 hover:bg-[#15803d] text-[#15803d] hover:text-white border border-[#86efac] dark:border-emerald-700 text-[11px] font-bold transition-colors cursor-pointer"
+                            >
+                                <i class="fa-solid fa-cart-plus text-[10px]"></i>
+                                <span>Reorder</span>
+                            </a>
+                        </div>
+                    </div>
+                @empty
+                    <div class="col-span-full py-6 text-center text-xs text-slate-400">All products are sufficiently stocked.</div>
+                @endforelse
+            </div>
         </div>
 
         {{-- Right (50%): Recent Sales Invoices --}}
@@ -618,7 +631,7 @@
                     All Invoices
                 </a>
             </div>
-            <div class="overflow-x-auto max-h-[340px]">
+            <div class="hidden lg:block overflow-x-auto max-h-[340px]">
                 <table class="w-full text-[13px] text-left border-collapse">
                     <thead class="sticky top-0 z-10 bg-[#f8fafc] dark:bg-slate-800 text-[#475569] dark:text-slate-300 text-[12px] font-semibold border-b border-slate-100 dark:border-slate-700">
                         <tr>
@@ -655,6 +668,40 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+
+            {{-- Mobile & Tablet Cards View (1 col mobile, 2 col tablet) --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-2.5 max-h-[360px] overflow-y-auto pr-1">
+                @forelse($metrics['recent_sales'] ?? [] as $ord)
+                    @php
+                        $ordDue = (float) ($ord->due_amount ?? 0);
+                        $ordPaid = (float) ($ord->paid_amount ?? 0);
+                        $statusText = $ordDue <= 0.009 ? 'Paid' : ($ordPaid > 0.009 ? 'Partial' : 'Due');
+                        $statusBadge = $statusText === 'Paid'
+                            ? 'bg-[#22c55e] text-white'
+                            : ($statusText === 'Partial' ? 'bg-[#eab308] text-[#1e293b]' : 'bg-[#ef4444] text-white');
+                    @endphp
+                    <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs space-y-2">
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                            <a href="{{ route('retail.invoice.show', $ord->id) }}" target="_blank" class="text-xs font-bold text-[#16a34a] dark:text-emerald-400 hover:underline">
+                                {{ $ord->order_no }}
+                            </a>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold {{ $statusBadge }}">
+                                {{ $statusText }}
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-xs font-medium text-slate-600 dark:text-slate-300 truncate">
+                                <i class="fa-regular fa-user text-[10px] me-1 text-slate-400"></i>{{ $ord->customer?->customer_name ?? 'Walk-in' }}
+                            </span>
+                            <span class="text-xs font-extrabold text-slate-900 dark:text-white tabular-nums shrink-0">
+                                {{ Money::formatBd($ord->sub_total) }}
+                            </span>
+                        </div>
+                    </div>
+                @empty
+                    <div class="col-span-full py-6 text-center text-xs text-slate-400">No recent invoices.</div>
+                @endforelse
             </div>
         </div>
     </div>

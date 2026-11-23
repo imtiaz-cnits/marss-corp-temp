@@ -60,7 +60,7 @@
             </div>
 
             {{-- 3. Desktop Table (8 Reference Columns — Screenshot 4) --}}
-            <div class="hidden md:block w-full overflow-x-auto rounded-2xl unified-ui-border shadow-2xs bg-white dark:bg-slate-900">
+            <div class="hidden lg:block w-full overflow-x-auto rounded-2xl unified-ui-border shadow-2xs bg-white dark:bg-slate-900">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-[#15803d] text-white text-xs font-semibold uppercase tracking-wider">
@@ -160,8 +160,8 @@
                 </table>
             </div>
 
-            {{-- 4. Mobile Card List View --}}
-            <div class="block md:hidden space-y-3 mb-3">
+            {{-- 4. Mobile & Tablet Card List View (1-col Mobile, 2-col Tablet) --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-3 mb-3">
                 @forelse($customers as $idx => $c)
                     @php
                         $totalDue = Money::add($c->previous_due_amount ?? 0, $c->orders_sum_due_amount ?? 0);
